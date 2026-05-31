@@ -1,0 +1,376 @@
+8th International IEEE EMBS Conference on Neural Engineering
+Shanghai, China, May 25 - 28 , 2017
+
+Decoding of Motor Imagery Movements from EEG Signals
+using SpiNNaker Neuromorphic Hardware
+Zied Tayeb, Emeç Erçelik, and Jörg Conradt
+Neuroscientific System Theory, Technical University of Munich, 80333 München, Germany
+
+Abstract— Non-invasive brain machine interfaces (BMIs) on
+motor imagery movements have been widely studied and used
+for many years to take advantage of the intuitive link between
+imagined motor tasks and natural actions. En route to future
+technical applications of neuromorphic computing, a major
+current challenge lies in the identification and implementation
+of brain inspired algorithms to decode recorded signals. Neuromorphic computing is believed to allow real-time implementation of large scale spiking models for processing and computation in non-invasive BMIs. Taking inspiration from the
+olfactory system of insects, we advance and implement a novel
+approach to decode and predict imaginary movements from
+electroencephalogram (EEG) signals. We use a spiking neural
+network implemented on SpiNNaker (4 chip, 64 cores) neuromorphic hardware. Our work provides a proof of concept for a
+successful implementation of a functional spiking neural
+network for decoding two motor imagery (MI) movements on
+the SpiNNaker system. The approach can be extended to
+classify more complex MI movements on larger SpiNNaker
+systems.
+
+I. INTRODUCTION
+Neuromorphic platforms use a different architecture
+compared to sequential computing, one that mimics brain
+processing with neurons and synapses. These hardware
+systems achieve a speedup and support massively parallel
+data processing in a brain-inspired fashion. In contrast to
+expectations according to Moore's law, the integration
+density of digital processors ceased to grow during the last
+decade and is unlikely to increase again. Hence,
+neuromorphic architectures are perceived to be a potential
+solution for this issue, as they express fundamental
+differences and advantages when compared to conventional
+computing infrastructure [1].
+To meet the challenge of efficient neuromorphic
+computing, a number of neuromorphic platforms have been
+and continue to be developed such as SpiNNaker,
+
+All authors are with the Technical University Munich, Germany,
+Department of Electrical and Computer Engineering, Research Group
+Neuroscientific System Theory, Center of Competence Neuroengineering.
+(+49 89 28926909, e-mail: zied.tayeb@tum.de)
+
+978-1-5090-4603-4/17/$31.00 ©2017 IEEE
+
+BrainScales hardware or IBM’s True North [2]. SpiNNaker
+is a novel massively-parallel computer architecture, inspired
+by the fundamental structure and function of the human
+brain. Each chip is a multi-core system, consisting of 18
+ARM968-based cores and also several internetworking
+elements and supporting modules. Thus, it supports an
+emulation of up to 12,000 neurons in biologically plausible
+real-time per board (SpiNNaker-3) [3] or even about
+200,000 neurons per board (SpiNNaker-5).
+This work presents a first attempt to use the potential
+advantages of neuromorphic computing and spiking neural
+network algorithms to decode brain signals and as per our
+knowledge no similar work has been published before. This
+new technology can enhance EEG based brain-machine
+interface classification performance which still suffers from
+limited motor imagery (MI) task detection and low accuracy
+due to non-stationary and non-linear characteristics of the
+brain signal.
+The aim of this work is therefore to decode EEG patterns
+generated during two MI movements (motor imagery of left
+and right hand) using a spiking neural network decoder.
+Here, as the first proof-of-principle, features of EEG signals
+were extracted and a classifier inspired by the olfactory
+system of insects was employed and implemented on
+SpiNNaker to recognize the two different MI movements.
+II. METHODS
+A. Data Description
+Our work is based on experimental data recorded by the
+Institute for Knowledge Discovery (Laboratory of BrainComputer Interfaces), Graz University of Technology. EEG
+signals were collected from 9 subjects that were able to
+perform long and stable motor imagery over a minimum time
+of 2-s and data were sampled at 250Hz. More experimental
+details are provided in [4].
+B. Preprocessing and Feature Extraction
+MI describes the mental rehearsal of a motor task without
+its execution, such as imagination of squeezing a training
+ball. These tasks induce a power increase or decrease of
+EEG amplitudes in certain frequency bands (mainly alpha
+and beta band) relative to a reference period and are referred
+
+263
+
+Authorized licensed use limited to: TU Delft Library. Downloaded on May 23,2026 at 15:01:18 UTC from IEEE Xplore. Restrictions apply.
+
+as event-related (de)synchronization (ERD/ERS) [5]. Hence,
+three EEG bipolar channels C3, Cz and C4 (according to the
+10/20-system) have been used to analyze these imaginations
+and to convert them into commands. Epochs of 2000ms with
+500ms pre-stimulus baseline were extracted from the
+continuous EEG data.
+First, all the signals are filtered using a digital Butterworth
+FIR band pass filter of order 5 in the range 8-30Hz, because
+the mu rhythm (8-13Hz) and beta band (14-30Hz) fall within
+this range.
+Afterwards, band power (BP) features were estimated from
+the ongoing EEG signal. For each of the three bipolar
+channels, BP features in 72 frequency bands were calculated
+using different overlapping narrow bands between 8 and 30
+Hz yielding a total of 216 BP features [4]. As the
+dimensionality of the extracted EEG features is usually quite
+high, it is necessary to reduce the dimensionality of the
+features before we use them. For this purpose, a standard
+principal component algorithm PCA was applied for
+dimensionality reduction leading to only 10 features [6].
+
+Spike trains are generated in neurons in the input layer and
+propagated to the decorelation layer, where projection
+neuron populations to the excitatory association neurons
+(orange in the association layer) are adapted by a supervised
+learning mechanism during training [10].
+D. Implementation on SpiNNaker
+We implemented a spiking neural network that decodes
+motor imagery movements from recorded EEG signals. The
+network runs on SpiNNaker neuromorphic hardware and
+performs its computations in a “purely spike-based fashion”
+[10]. It incorporates an insect-brain-inspired, three-layer
+neural architecture. Each of the 10 features from EEG data
+was encoded in 20 population-coding neurons. The
+activation of the different population-coded neurons was
+determined by a Gaussian function and implemented on
+SpiNNaker as spike source array.
+
+Moreover, to compare performance against our method a
+Support Vector Machine linear classifier [7] for two MI was
+used to test and validate the feature extraction step. A
+classification accuracy of 77.49 % was obtained. Note that
+this classifier has been used solely for performance and
+accuracy comparison with our proposed spiking neural
+network classifier.
+Finally, the features were fed into SpiNNaker and a
+spiking neural network was trained to classify two-class MI
+data (left vs right).
+C. Network Architecture and Model Design
+Classical machine learning algorithms have been widely
+used for EEG signals decoding [8]. However, in order to
+exploit the native communication protocol within the brain
+(i.e. discrete events so-called spikes) in brain machine
+interfaces we need to use an appropriate processing
+paradigm. Such a paradigm is provided by artificial spiking
+neural networks which, by using temporal information
+associated with the spikes to compute, can be used to classify
+remarkable events in brain signals they represent.
+In this paper, we used a classifier network based on a
+spiking model of the insect olfactory system [9], which has
+been previously described and investigated in detail in [910]. The model’s three-stage architecture consists of (1) an
+input layer designed to encode multivariate, real-valued data
+samples into a population-based, positive, bounded, firingrate representation, (2) a decorrelation layer used for filtering
+and reducing correlation between inputs (where populations
+are grouped in ensembles that represent the so-called
+glomeruli in the insect antennal lobe) and finally (3) an
+association layer that forms a winner-take-all decision circuit
+through strong lateral inhibition. Figure 1 presents the
+spiking network model based on the olfactory system of
+insects.
+
+
+Fig.1. Spiking Neural Network model [10].
+
+Each spike source array is connected to a population of
+neurons in the encoding (input) layer. The input layer
+consists of 200 populations of 10 neurons each, which
+connect one-to one to the second (decorrelation) layer.
+The decorrelation layer is organized in so-called
+glomeruli, which are functional groups of neurons that exist
+in the real biological model. Each glomerulus consists of the
+same number (here 200*10) of populations and neurons as
+the previous one.
+Each glomerulus in the decorrelation layer has inhibitory
+connections with other glomeruli with a probability of 40%.
+The second layer has excitatory connections to the neurons
+in the association layer with a probability of 50%.
+The association layer consists of two inhibitory and two
+excitatory glomeruli. Each of the inhibitory population has
+inhibitory connections to the excitatory one with a 70%
+probability.
+
+264
+Authorized licensed use limited to: TU Delft Library. Downloaded on May 23,2026 at 15:01:18 UTC from IEEE Xplore. Restrictions apply.
+
+SpiNNaker are shown in the upcoming figures and discussed
+below.
+
+
+Fig.2. Spiking Neural Network Classifier Implementation on SpiNNaker.
+
+The Spike Source Arrays is connected to the encoding
+layer by 0.2nA weights, the connection weights between
+encoding layer and decorrelation layer are 0.6nA, the
+inhibitory connection weights inside the decorrelation layer
+are 0.03nA, the excitatory connections weights from second
+layer to association layer are 0.08nA, the excitatory
+connections weights inside the association layer are 0.9nA
+and the inhibitory connection weights in the same layer are
+0.1nA. The delay of projections was set to 1ms.
+Implemented neurons are leaky integrate and fire type
+neurons, and the synapse models are exponential currentbased synapses. The model parameters used are described in
+detail in [11]. Furthermore, we used 60 Poisson Generators
+as noise sources that excite the input layer with 10Hz firing
+rate and 0.02nA connection weight.
+The classification output of the network corresponds to
+two labeled (left vs. right) populations in the third layer. The
+difference in the firing rates of each neuron at the
+decorrelation layer for each class was computed and
+compared to a fixed threshold. Consequently, we were able
+to determine the activity of each neuron and to determine the
+one with higher spike count for a certain class. If this
+difference exceeds an acceptance threshold for one class, the
+connection was potentiated with a certain weight value
+between the associated population in the second layer and
+the AN population represented the same class in the output
+layer.
+
+Figure 3 shows the total spiking activity of neurons at the
+decorelation layer for each class. These neurons present
+excitatory connections to the two populations AN1 and AN2
+of the output layer. This figure shows the number of active
+neurons in the second layer for the features related to each
+class separately. As seen, a neuron that is significantly more
+active for one class makes a connection to the neurons of the
+same class at the association layer, whereas the less active
+neurons remain unconnected. Hence, some of the neurons
+contribute to different classes to make a winner-take all
+decision and form a winner population.
+
+
+Fig.3. Spiking activity of the neurons in the second layer.
+
+Figure 4 shows the spike trains that we obtained of all
+neurons in the association layer during a single validation
+trial. In this figure, vertical lines separate each trial of 200
+ms, and dots show the time of occurrence of each spike with
+its corresponding neuron.
+
+We wish to emphasize that we didn't use directly a Spiketiming dependent plasticity (STDP) to adjust the connections
+between filtering layer and association layer [11].
+III. RESULTS
+We tested and validated the performance of our spiking
+neural network classifier implemented on SpiNNaker
+neuromorphic hardware. The accuracy of our classifier
+during the validation step was 75% for a single subject after
+120 trials. We wish to emphasize that the massive
+parallelism of SpiNNaker here is a potential advantage over
+conventional computing when processing large amounts of
+data in parallel. Results obtained by the implementation on
+
+
+Fig.4. Spiking activity of the neurons in the association layer during
+validation step (AN1 and AN2 are the two populations in the third layer
+presenting the two classes).
+
+To test the network's prediction abilities, 20 trials (10 for
+each class) of non-trained data were used to validate the
+performance of our classifier. Results are shown in figure 5.
+
+265
+Authorized licensed use limited to: TU Delft Library. Downloaded on May 23,2026 at 15:01:18 UTC from IEEE Xplore. Restrictions apply.
+
+In future work, we are aiming to scale up our model to
+classify various more complex imaginary movements within
+the same limb and to move from the classic motor imagery
+detection (left vs right movement) to decoding complex
+movement intentions. Furthermore, we are aiming to focus
+on the kinematic level, where movement direction and hand
+position or velocity can be decoded from EEG signals and
+can be used for real-time neuroprosthesis control.
+
+
+Fig.5. Total spikes at each AN population for each trial during the
+validation step
+
+The winner for each trial is the AN class that has more
+spikes. In the figure, the triangles refer to class 1 and the
+squares refer to class 2. Notably, the blue color presents the
+correctly classified trials whereas the red color presents the
+misclassified trials. If the blue square appears above the blue
+triangle, the class 2 is considered to be the winner for that
+trial and vice versa. To achieve better classification results, it
+is utmost important to improve the used method for learning.
+STDP can be an efficient strategy for our future work.
+IV. DISCUSSION
+In our work, an off-line classification of two MI
+movements from recorded EEG signals has been achieved.
+Our model uses a spiking neural network implemented on
+SpiNNaker for time series data classification. The model
+architecture is inspired by the olfactory system of insects and
+mimics biological information processing. We achieved 75%
+of correctly predicted motor imagery movement on nontrained data.
+We wish to point out that the achieved result is still
+slightly lower than e.g. SVM classifier (77.49%). As a
+consequence, we are aiming to improve classification
+performance by using a biologically plausible STDP method
+to further train our network. We would like to stress that our
+current approach presents a proof of concept for decoding
+non-invasive brain signals using the scalable SpiNNaker
+spiking neurocomputing hardware, rather than providing a
+final system. We are currently running the system on the
+smallest existing SpiNNaker boards, and expect significant
+improvements in accuracy when scaling-up our spiking
+model in future research.
+As short term goal, we will work on extending the model
+by incorporating also electromyography (EMG) signals,
+which will be used for decoding different hand movements.
+V. CONCLUSION
+The above results show that using a spiking neural network
+classifier can enhance the average imagery classification
+accuracy in training and evaluation stages with reduced
+training time and smaller energy and power consumption.
+
+As a long-term research vision, it is likely that the model
+can be improved also by explicitly including feedback. This
+will be done by decoding the error-related potential (ErrP), a
+time-locked potential elicited when actions do not match the
+users’ expectations [9]. Such decoded information from EEG
+signals will be used as a reward signal to learn and adjust the
+desired behavior in a closed-loop brain machine interface.
+
+ACKNOWLEDGMENT
+The authors thank Dr. Christoph Richter, Michael Lutter
+and Stefan Ehrlich for helpful comments and discussions.
+REFERENCES
+[1]
+
+M. Warldrop, the chips are down for Moore’s law, Nature, vol.530,
+no.7589, pp.144-147, Feb.2016.
+[2] Walter, F Röhrbein, F. & Knoll, Neuromorphic implementation of
+neurobiological learning algorithms for spiking neural networks.
+Neural Process, pp. 44-103, 2016.
+[3] Furber, Steve B. Gulluppi, Francesco, Temple Steve, Plana, Luis A,
+The SpiNNaker project, IEEE Transactions on, Vol.102, No.5,
+6750072, pp.652-665, 2014.
+[4] R. Leeb, F. Lee, C. Keinrath, R. Scherer, H. Bischof and G.
+Pfurtscheller, "Brain–Computer Communication: Motivation, Aim,
+and Impact of Exploring a Virtual Apartment," in IEEE Transactions
+on Neural Systems and Rehabilitation Engineering, vol. 15, no. 4, pp.
+473-482, Dec. 2007.
+[5] Gernot Müller-Putz and Andreas Schwarz and Joana Pereira and
+Patrick Ofner", From classic motor imagery to complex movement
+intention decoding: "The noninvasive Graz-BCI approach",vol 228,
+2016, Pages 39–70, progress in Brain Research. Elsevier BV, 2016.
+[6] Muhammad Naeem, Clemens Brunner, and Gert Pfurtscheller,
+“Dimensionality Reduction and Channel Selection of Motor Imagery
+Electroencephalographic Data,” Computational Intelligence and
+Neuroscience, vol. 2009, pp 1-3, 2009.
+[7] A.Sivakami, and S.Shenbaga Devi, analysis of eeg for motor imagery
+based classification of hand activities, International Journal of
+Biomedical Engineering and Science (IJBES), Vol. 2, No. 3, July
+2015.
+[8] Nicolas-Alonso LF, Gomez-Gil J. “Brain Computer Interfaces, a
+Review”. Sensors (Basel, Switzerland), 12(2): pp.1211-1279, 2012.
+[9] Michael Schmuker, Thomas Pfeil, and Martin Paul Nawrot, “A
+neuromorphic network for generic multivariate data classification”,
+PNAS 111 (6), pp. 2081-2086, 2014.
+[10] Lungu IA, Riehle A, Nawrot MP, Schmuker M, “Predicting voluntary
+movements from motor cortical activity with neuromorphic
+hardware”. IBM Journal of Research and Development, in press,
+2017.
+[11] Diamond Alan, Nowotny Thomas, Schmuker Michael, Comparing
+Neuromorphic Solutions in Action: Implementing a Bio-Inspired
+Solution to a Benchmark Classification Task on Three ParallelComputing Platforms, Frontiers in Neuroscience, Vol. 2, 2016.
+[12] Francesco Di Gregorioa, Marco Steinhausera, Martin E. Maier,
+“Error-related brain activity and error awareness in an error
+classification paradigm”, Science Direct, pp. 202-210, 2016.
+
+266
+Authorized licensed use limited to: TU Delft Library. Downloaded on May 23,2026 at 15:01:18 UTC from IEEE Xplore. Restrictions apply.
+
+

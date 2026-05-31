@@ -1,0 +1,2672 @@
+JOURNAL OF LATEX CLASS FILES
+
+1
+
+Reconsidering the Energy Efficiency of Spiking
+Neural Networks Inference from Analytical
+Perspectives
+
+Abstract—Spiking Neural Networks (SNNs) promise higher
+energy efficiency over conventional Quantized Artificial Neural
+Networks (QNNs) due to their event-driven, spike-based computation. However, prevailing energy evaluations often oversimplify, focusing on computational aspects while neglecting critical
+overheads like comprehensive data movements and memory
+accesses. Such simplifications can lead to misleading conclusions regarding the true energy benefits of SNNs. This paper
+presents a rigorous re-evaluation. We establish a fair baseline by
+mapping rate-encoded SNNs with T timesteps to functionally
+equivalent QNNs with ⌈log2 (T + 1)⌉ bits. This ensures both
+models have comparable representational capacities, as well
+as similar hardware requirements, enabling meaningful energy
+comparisons. We introduce a detailed analytical energy model
+encompassing core computation and data movements. Using
+this model, we systematically explore a wide parameter space,
+including intrinsic network characteristics (SNN time window
+size, spike rate, QNN sparsity, model size, weight bit-level) and
+hardware characteristics (memory system and network-on-chip).
+Our analysis identifies specific operational regimes where SNNs
+genuinely offer superior energy efficiency. For example, under
+typical neuromorphic hardware conditions, SNNs with moderate
+time windows (T = 5) require an average spike rate (sr ) below
+5.7% to outperform equivalent QNNs. These insights guide the
+design of truely energy-efficient neural network solutions.
+Index Terms—Spiking neural network, Quantized neural network, Energy efficiency
+
+I. I NTRODUCTION
+Spiking Neural Networks, characterized by event-driven
+sparsity and binary spike signaling, represent a compelling
+approach in neuromorphic computing. Unlike conventional
+ANNs that process dense tensors, SNNs transmit sparse binary
+spike trains using integrate-and-fire (IF) model, significantly
+reducing computational load and promising substantial energy
+savings [1]–[4]. As shown in Figure 1, at each timestep t,
+the SNN neuron calculates the weighted sum of incoming
+spikes, adds this to a accumulated membrane potential, V ,
+from the previous timestep t − 1, and checks it against a
+threshold θ. If the threshold is exceeded, the neuron emits
+a spike ‘1’ and resets the potential. Otherwise, it outputs a
+‘0’ [5], [6]. Recent architectures such as SpikingFormer [7],
+SpikingBERT [8], SpikeLM [9], and Sorbet [10] demonstrate
+successful integration of spiking dynamics in complex models,
+including large language models, showcasing notable energy
+reductions.
+Zhanglu Yan, Zhenyu Bai, Kaiwen Tang and Weng-Fai Wong are with
+the School of Computing, National University of Singapore. {zhangluyan,
+wongwf}@comp.nus.edu.sg; zhenyu.bai@nus.edu.sg
+∗ Corresponding author.
+
+Input
+spike train
+00100011
+Input
+Neurons
+
+arXiv:2409.08290v4 [cs.NE] 12 May 2026
+
+Zhanglu Yan, Zhenyu Bai∗ , Kaiwen Tang and Weng-Fai Wong, Senior Member, IEEE
+
+Membrane
+Potential
+
+t
+W0
+Input
+spike train
+01000110 W1
+t
+Input
+spike train
+00010001
+
+W2
+
+Threshold
+
+00010000
+t
+output
+spike train
+
+t
+
+T
+Action
+T
+Action
+
+Fire
+
+Output
+Neuron
+
+1
+V + w0 + w2
+5
+V + w2 ; fire; V − θ
+
+T (time)
+1
+
+2
+
+3
+
+4
+
+2
+V + w0 + w1
+6
+V + w0
+
+5
+
+6
+
+7
+
+8
+
+3
+V + w1
+7
+V + w1
+
+4
+x
+8
+x
+
+Fig. 1: Integrate-and-fire SNN model
+
+However, accurately realizing these energy benefits is complex [11]. Prevailing evaluations often rely on simplistic
+metrics, such as counting the number of additions versus
+multiplications and assuming a fixed energy consumption
+per addition and multiplication [12]. The cost of the data
+movements is one of the critical factors but often overlooked:
+due to the poor scalability of memories (commonly known as
+the memory wall [13]), the energy consumption of memory
+operations becomes even dominating over the energy spent by
+the computations themselves [14], [15]. While SNNs often
+claim to be event-driven [16], therefore leveraging spiketrain sparsity to skip computations, this mechanism requires
+multiple data accesses per neuron activation cycles (T × sr
+times per weight, where T is the time window size and sr
+is the spike rate), unlike ANNs that typically fetch weights
+just once per activation. This increased memory access, along
+with data movements for spikes, can significantly impact the
+energy consumption, calling the energy efficiency of SNNs
+into question. Thus, this paper addresses this critical question:
+Under what specific algorithmic and hardware conditions
+do SNNs achieve genuinely superior end-to-end energy
+efficiency compared to ANNs?
+Evaluating the end-to-end energy efficiency of neural network inference is a multifaceted challenge, influenced by interacting factors spanning model design (software), softwareto-hardware mapping (or compilation), and the specifics of
+the underlying hardware architecture and their physical implementations. Ensuring a fair, “apples-to-apples” comparison
+between different neural network paradigms, such as SNNs
+and conventional ANNs, is therefore inherently complex.
+To enable a fair comparison, our approach exploits a key
+
+JOURNAL OF LATEX CLASS FILES
+
+2
+
+observation: each rate-encoding SNN has a near-equivalent
+Quantized ANN counterpart that we call the QNN-SNN twin.
+These twins share the same network structure and weight
+datatype, differing only in their activation representations,
+that we demonstrate to have near-equivalent representability.
+Leveraging this equivalence enables controlled comparison
+across varied model architecture settings and hardware settings.
+A. The QNN-SNN Twins
+Our comparison is based on the fundamental observation
+that a rate-encoding SNN can always be converted to a
+near-equivalent QNN, and vice versa. Specifically, an SNN
+operating over T timesteps is paired with a QNN with the
+same network structure but utilizing activations quantized
+to ⌈log2 (T + 1)⌉ bits. These QNN-SNN twins share the
+same network structure and weight datatype, differing only
+in their activation representation and computation methods.
+Because of such identicality, we can keep consistent hardware
+mapping for the twin. Consequently, when comparing twin
+QNN-SNN pairs, we control both the model capability and
+mapping, isolating hardware differences and how the twin can
+be executed on that hardware as the primary factors.
+B. Hardware Energy Consumption
+Hardware inference energy consumption comprises three
+primary components:
+E = ECompute + EData (+EControl )
+
+(1)
+
+Compute Energy (ECompute ): This accounts for energy
+spent on arithmetic operations—additions in SNNs and multiplications plus additions in ANNs—and activation functions.
+Although SNNs replace multiplications with additions, potentially saving energy due to sparsity, actual energy savings
+depend on specific hardware implementations, arithmetic designs, operand data types, and the operational sparsity level.
+Data Movement Energy (EData ): Digital hardware fundamentally relies on moving data among storage (memories) and
+compute units, performing computations, and subsequently
+transferring data to the next computation stage or output.
+Specifically, for SNN and QNN architectures, this includes
+fetching weights and transferring intermediate activations.
+On digital devices, data movement typically occurs through
+memory hierarchies or Network-on-Chip (NoC). The resulting
+data traffic depends heavily on both hardware characteristics
+and the model-to-hardware mapping. Our analysis primarily
+targets spatial dataflow architectures where data movement
+predominantly occurs via NoCs rather than memory hierarchies. 1
+Control Energy (EControl ): General-purpose architectures
+typically invest hardware resources either at the front-end to
+support unified programming interfaces, such as instruction
+fetching and decoding for Instruction Set Architectures (ISAs);
+1 We consider digital neuromorphic architectures ( [17], [18] to be a subset
+
+of the widely adopted concept of dataflow architectures (e.g. [19]–[21]) with
+specializations.
+
+or at the back-end to enhance performance sustainability
+across diverse applications, using techniques such as outof-order buffers in CPUs and warp schedulers in GPUs. In
+this study, we exclude these architectural costs related to
+generality-specialization trade-offs because we mostly focus
+on specialized architecture where this control cost is low.
+In other words, we are trying to find out what kind of
+specialization is more (or less) beneficial for SNN. Instead,
+the energy contribution of the control part is ignored in this
+work. Our study focuses on the energy consumption of the
+fundamental operations used in SNNs, i.e. the compute and
+data movement energy, developing a first-principles analytical
+model rather than a model for any specific architecture.
+C. Objectives
+Motivated by the considerations above, the objective of
+this paper is to develop a first-principles analytical energy
+model that explicitly accounts for both computation and data
+movement costs, including weight loading and the loading,
+storing, and transfer of activations, in order to enable a fair
+comparison between SNNs and their QNN-SNN twins. Using
+this model, we analyze a range of hardware and software
+configurations to identify the spectrum of conditions under
+which SNNs provide greater energy benefits than their twin
+QNN counterparts. Ultimately, this work aims to give developers of digital neuromorphic systems a practical way to
+quickly identify the target operating range in which SNNbased designs are meaningful, enabling fast pre-development
+validation of whether a given system makes sense from an
+energy-efficiency perspective.
+II. I NFORMATION R EPRESENTATION E QUIVALENCE
+BETWEEN SNN AND ANN
+To enable a fair comparison between SNNs and QNNs,
+this section proceeds in three scopes. We first establish the
+equivalence at the single-neuron level, where one target IF
+neuron is mapped to its QNN counterpart. We then consider
+the set of incoming inputs connected to that target neuron,
+which is used to relate QNN activation density to the SNN
+input spike rate. Finally, we show how these per-neuron
+quantities are aggregated into network-level average quantities
+used in the later energy analysis.
+We first consider a single target neuron and study its output
+representation capability:
+Theorem 1. Consider a rate-encoded IF SNN neuron operating over a time window of size T . Assume the neuron is nonleaky, uses reset-by-subtraction, and satisfies 0 ≤ Iil (t) < θil
+for every step t. Then there exists a QNN neuron whose
+output activations are quantized to at most ⌈log2 (T + 1)⌉ bits
+such that the QNN exactly matches the single-neuron output
+representation of the SNN.
+We next consider incoming input set of one target neuron:
+Theorem 2. Consider the incoming inputs of one target
+neuron i in the QNN layer l, and let γil−1 denote the sparsity
+rate over these inputs. Assume that each non-zero QNN
+
+JOURNAL OF LATEX CLASS FILES
+
+TABLE I: Symbols used in Theorems and Proofs.
+Symbol Meaning
+Neuron level
+vil (t)
+membrane potential of neuron i at step t
+θil
+firing threshold of neuron i
+Iil (t)
+net input current of neuron i at step t
+sli (t)
+output spike of neuron i at step t
+nli
+total output spikes of neuron i over T steps
+ϕli
+average firing rate of neuron i, nli /T
+Source-input level
+Sil−1
+source-input set of neuron i
+l−1
+Nsrc,i
+number of source inputs, |Sil−1 |
+l−1
+kj
+total spikes from source input j over T steps
+al−1
+QNN activation of source input j
+j
+γil−1
+sparsity over Sil−1
+l−1
+sr,i
+average input spike rate into neuron i
+Network level
+sr
+network-average spike rate
+γ
+network-average activation sparsity
+N
+the set of all neurons in the SNN
+Nsrc
+network-average number of source inputs
+
+activation al−1
+lies in the range [1/T, 1]. If an SNN is used
+j
+to represent the same input information with rate coding over
+a time window T , then its average input spike rate sl−1
+r,i is
+bounded by
+1 − γil−1
+l−1
+≤ sl−1
+.
+r,i ≤ 1 − γi
+T
+Theorem 1 and Theorem 2 are stated for one target neuron
+and its incoming input set. We now extend these local results to
+the whole network. Since the same local construction applies
+independently to every neuron under the same network architecture and time window T , the network-level result follows
+by applying the neuron-wise construction to all neurons and
+aggregating the local quantities.
+Proposition 1 (Network-level extension). Let N denote the
+set of all neurons in the SNN.
+(a) Extension of Theorem 1. If Theorem 1 holds for every
+neuron (i, l) ∈ N , then there exists a QNN twin with the
+same network architecture such that each QNN neuron uses
+at most ⌈log2 (T + 1)⌉-bit activations and matches the output
+representation of its corresponding SNN neuron.
+(b) Extension of Theorem 2. For every neuron (i, l) ∈ N ,
+1−γ l−1
+l−1
+Theorem 2 gives Ti ≤ sr,i
+≤ 1−γil−1 . Aggregating these
+neuron-level quantities over the whole network with weights
+l−1
+Nsrc,i
+yields
+P
+P
+l−1 l−1
+l−1
+l−1
+)
+(i,l)∈N Nsrc,i sr,i
+(i,l)∈N Nsrc,i (1 − γi
+sr = P
+,γ = 1−
+.
+P
+l−1
+l−1
+(i,l)∈N Nsrc,i
+(i,l)∈N Nsrc,i
+and therefore
+
+1−γ
+≤ sr ≤ 1 − γ.
+T
+The details of Proof for Theorem 1, Theorem 2 and Proposition 1 are shown in Appendix A to C.
+III. H ARDWARE
+Section II established the relationship between a twin of
+SNN and QNN which have near-equivalent representational
+
+3
+
+capabilities.This equivalence maintains consistency in weight
+datatypes and overall network architecture, isolating differences to the representation of activations and the computations
+required to generate them. Building on this foundation, this
+section delves into the energy model of the QNN-SNN twin
+with hardware implications arising from these distinctions. Our
+primary objective is to deduce the energy trade-offs between
+SNNs and QNNs, thereby identifying the specific operational
+conditions and parameter regimes under which one paradigm
+achieves superior energy efficiency over the other. To simplify
+the explanation, in the following sections, we consider the
+energy consumption of a single output neuron with with Nsrc
+input neurons for both the SNN and the QNN forming a
+twin SNN-QNN pair, knowing that the energy consumption
+of a layer can be calculated with its layer width and its
+previous layer’s width; and the end-to-end energy consumption
+is calculated by the sum of the each layer. Specifically, the
+SNN with T timestep is paired to a QNN with ⌈log2 (T + 1)⌉
+bits-integer quantization. The latter processes its input in one
+forward pass with integer multiplication and accumulation
+while the former spreads computations over T time steps with
+additions only. Although SNN are known to be sparse (or the
+spike rate as the density), QNN may also have sparsity due
+to the sparsification effect of the activation function such as
+ReLU . Let γ be the fraction of zero activations in the QNN
+(sparsity), and sr the average spike rate (density) per input in
+the SNN.
+A. Core computing (ECompute )
+Core computing energy quantifies the energy consumed
+by fundamental arithmetic operations. For Artificial Neural
+Networks, this primarily involves multiply-accumulate (MAC)
+operations, whereas Spiking Neural Networks predominantly
+utilize accumulate (ACC) operations.
+In a typical ANN layer, core computation consists of summing Nsrc weighted inputs, followed by a non-linear activation
+function. This activation often includes clamping to constrain
+output values to a defined range(e.g., [0,1]). The computational
+c
+energy for ANNs, EANN
+, can thus be expressed as:
+c
+EANN
+= Nsrc · (1 − γ) · EMAC + 2ECMP
+{z
+} | {z }
+|
+Active Operations
+
+(2)
+
+Clamping
+
+where EMAC is the energy per MAC operation, and ECMP is
+the energy per comparison and clamping. Due to the sparsity,
+only (1 − γ) computations are necessary after skipping the
+zero activations.
+For SNNs employing Integrate-and-Fire neuron models,
+MACs are replaced by additions (accumulations). The core
+c
+computational energy for SNNs, ESNN
+, is given by:
+c
+ESNN
+= Nsrc · T · sr · EACC + T · (ECMP + sr · ESUB ) (3)
+|
+{z
+} |
+{z
+}
+Membrane Potential Update
+
+Spiking Operations over T
+
+Here, T is the number of timesteps, sr is the average spike
+rate, EACC is the energy for an accumulation, and ESUB is the
+energy for a subtraction, representing the membrane potential
+update after firing.
+
+JOURNAL OF LATEX CLASS FILES
+
+4
+
+To compare the computational energy efficiency, we introduce a parameter k, representing the energy ratio of a MAC
+operation over an addition. Assuming EACC = ECMP = ESUB ,
+we define k = EMAC /EACC . An SNN offers computational
+c
+c
+energy savings if ESNN
+≤ EANN
+, which leads to the condition:
+T sr +
+
+T + T sr − 2
+≤ k(1 − γ)
+Nsrc
+
+(4)
+
+For typical large-scale neural networks, Nsrc (which is equal
+to the pevious layer’s width) is large (e.g., ≥ 103 ), rendering
+sr −2
+negligible. This simplifies the condition for
+the term T +T
+Nsrc
+SNN computational energy advantage to T sr ≤ k(1 − γ). 2
+We analyze this simplified condition under three SNN spike
+rate scenarios discussed in Theorem 2:
+1−γ
+• Best-case for SNN (sr = T ): Corresponds to the minimum SNN spike rate to match QNN activation density
+(1−γ) over T timesteps. SNNs are more computationally
+energy-efficient if k ≥ 1 ,i.e. as soon as multiplication
+consumes extra energy, which is generally true.
+(1−γ)(1/T +1)
+• Average-case for SNN (sr =
+): SNNs are
+2
+1+T
+favored if k ≥ 2 . That says, the SNNs are energy
+saving if the energy of multiplication is greater than
+T −1
+1+T
+of the energy of an addition.
+2 −1= 2
+• Worst-case for SNN (sr = 1 − γ): Represents the
+maximum SNN spike rate, where each potential input
+effectively triggers a spike in every relevant timestep.
+SNNs are favored if k ≥ T . (The referenced study notes
+k > T for strict superiority). That is, if SNNs have too
+many spikes, their sparsity dispersers and hence they can
+win only if the multiplication takes a lot of energy and
+the number of time steps is small.
+B. Data Movement Energy (Edata )
+
+for spiking neural networks, they share important architectural
+principles with other dataflow systems, including Tenstorrent [19], SambaNova [21], and Cerebras [20], which target a
+broader range of AI and high-performance computing workloads. The goal of our energy model is not to construct highly
+detailed, architecture-specific models, but rather to establish a
+first-principles understanding of the fundamental operations
+involved in data movement. Accordingly, we focus on the
+general energy costs of data movement in dataflow architectures, using this term hereafter to include digital neuromorphic
+architectures as well.
+Since our target platforms are dataflow-style architectures,
+we assume a static mapping of the network onto hardware
+resources, as is common in prior SNN compiler and mapping
+flows for predictable execution and communication analysis
+[17], [18], [23]. As illustrated in Figure 2, each core contains
+local memory, control logic, and compute units, while intercore communication is handled through an on-chip network.
+Under this mapping, synaptic weights and neuron state are
+kept in each core’s local SRAM, and spikes/activations are
+transmitted across cores via the NoC. This organization is
+consistent with representative neuromorphic processors such
+as IBM TrueNorth, whose neurosynaptic cores communicate
+through an event-routing fabric, and Intel Loihi, whose manycore design maintains local state within cores and exchanges
+spike messages over an on-chip interconnect [17], [18].
+Accordingly, we adopt this weight-stationary, local-state
+mapping as the common baseline for both the SNN and its twin
+QNN. Although this mapping is not necessarily optimal for
+every model architecture or datatype, it makes data placement
+and inter-core communication explicit and directly comparable
+across the two twins. This follows the same principle used
+in spatial accelerator studies, where different dataflows are
+compared under identical hardware constraints to enable fair
+evaluation. By contrast, GPU execution depends much more
+strongly on dynamic thread scheduling and cache behavior,
+which are less explicit and therefore harder to control in a
+tightly matched SNN–QNN comparison [24], [25].
+
+Data movement between storage, compute units, and among
+compute units is a fundamental and often dominant component of energy consumption in neural network computations. While classical Von Neumann architectures rely heavily
+on memory hierarchies (on-chip SRAM, off-chip DRAM)
+for data transfer, the well-known memory wall in siliconbased digital devices has spurred the development of non-Von
+Neumann approaches. Dataflow architectures, which prioritize
+efficient data movement through fixed datapaths or NoCs, are
+prominent examples. However, memory remains indispensable
+as storage devices for storing static information like model
+weights. Consequently, the data movement energy in NN
+models primarily comprises the costs of fetching weights and
+transferring activations. These costs are highly sensitive to
+hardware technologies (e.g., memory type, NoC design) and
+mapping strategies, which dictate data transfer distances and
+patterns.
+Many digital neuromorphic architectures, such as Loihi [22]
+and TrueNorth [18], can be viewed as specialized forms of
+dataflow systems. Although they are often designed primarily
+
+Fig. 2: A classical neuromorphic processing element (PE)
+array with a Network-on-Chip (NoC) for inter-core communication [22], [26], [27].
+
+2 This simplification was used only in Section III.A to provide a high-level
+intuition; in the later results section, all concrete energy calculations for both
+ANNs and SNNs were computed using the full, unsimplified energy models
+presented in Eq. (2) and Eq. (3).
+
+We need to further distinguish the energy consumption of
+moving activations by separating sparse and dense activation
+move
+e move as the energy cost per
+movements. We denote E
+and E
+
+Router
+PE
+
+from router
+Synapses
+Mapping &
+Weights Loading
+Accumulated
+Activation
+Neuron State
+Updates
+Output Spike
+Generation & Routing
+to router
+
+JOURNAL OF LATEX CLASS FILES
+
+5
+
+bit moved for dense and sparse data movements, respectively,
+e move > E move . The reason is that sparse
+where typically E
+activations are often transported as fine-grained, dynamically
+generated events over the on-chip interconnect, so the useful
+payload is accompanied by additional transaction overheads
+such as packet headers, routing and arbitration, buffer accesses, and control activity. When the same amount of useful
+information is fragmented into many small transfers, these
+per-transaction costs are amortized less effectively, leading
+to a higher energy cost per useful bit moved [28]–[30].
+This assumption is particularly relevant for neuromorphic
+architectures in which spike/event communication is carried
+by an on-chip network rather than by a purely streaming dense
+datapath [17], [18]. For weights, the energy per access (E weight )
+is assumed identical for SNNs and their corresponding QNNs
+due to matched network architecture and weight precision; the
+primary difference lies in the number of weight accesses.
+The data movement energy for QNNs, considering both
+e d ) and dense (E dQNN ) activation transfers, is forsparse (E
+QNN
+mulated as:
+d
+eQNN
+e move +E weight )
+E
+= Nsrc · (1 − γ) · (⌈log2 (T + 1)⌉ · E
+|
+{z
+}
+activation
+
+(5)
+d
+move
+E QNN = Nsrc · (⌈log2 (T + 1)⌉ · E
++ E weight )
+
+(6)
+
+Similarly, for SNNs, which transmit 1-bit spikes over T
+timesteps with an average spike rate sr 3 :
+
+d
+d
+eSNN
+eQNN
+e move + E weight )
+E
+≤E
+=⇒ T sr (E
+
+e move + E weight )
+≤ (1 − γ)(bE
+(9)
+d
+d
+e move + E weight )
+eSNN
+E
+≤ E QNN =⇒ T sr (E
+
+≤ bE
+
+d
+
+E SNN = Nsrc · T · (E
+
+move
+
++ E weight )
+
+(7)
+
++ E weight
+
+(10)
+
+We then adapt the three spike-rate
+cases from Section III.A:
+
+:
+Eq.
+(9) always holds, and
+Best-case SNN sr = 1−γ
+T
+Eq. (10) gives
+move
+
++ E weight
+bE
+.
+(11)
+e move + E weight
+E
+
+
++1)
+Average-case SNN sr = (1−γ)(1/T
+: Eqs. (9) and (10)
+2
+give
+γ ≥1−
+
+e move + E weight
+bE
+−1
+e move + E weight
+E
+
+ move
++ E weight
+2 bE
+
+ −1
+T ≤
+e move + E weight
+(1 − γ) E
+
+T ≤2·
+
+(12)
+
+(13)
+
+Worst-case SNN (sr = 1 − γ): Eqs. (9) and (10) give
+T ≤
+T ≤
+
+d
+eSNN
+e move + E weight )
+E
+= Nsrc · T · sr · (E
+
+move
+
+e move + E weight
+bE
+e move + E weight
+E
+bE
+
+move
+
+(14)
+
++ E weight
+
+
+
+e move + E weight
+(1 − γ) E
+
+
+
+(15)
+
+(8)
+IV. R ESULTS
+
+We consider the actual data movement energy for each netd
+d
+work, EQNN
+and ESNN
+, is the minimum of its sparse and dense
+options, i.e. using sparsity only if it is beneficial 4 .
+d
+
+Comparing dense transfers (Eq. (6) and Eq. (8)), E QNN
+d
+is generally lower than E SNN due to the QNN processing
+⌈log2 (T + 1)⌉-bit activations once, while the SNN effectively
+processes T individual 1-bit potential spike slots. Thus, SNN
+energy advantages in data movement hinge on effective spare d (Eq. (7)).
+sity utilization, as captured by E
+SNN
+To analyze when SNNs are more energy-efficient than
+QNNs in data movement, we compare the sparse SNN transfer
+in Eq. (7) with the sparse and dense QNN transfers in Eqs. (5)
+and (6). Let b = ⌈log2 (T + 1)⌉ denote the activation bit-width
+of the twin QNN. Then:
+3 Average spike rate is a first-order proxy for event volume; in more general
+SNN systems, burstiness, spatial imbalance, and memory/NoC effects can
+further affect communication cost. Under the bounded IF regime assumed
+in Theorem 1, however, spike generation is well controlled, making average
+spike rate a reasonable first-order metric in our analysis.
+4 We omit partial sum energy, as it involves local accumulator register
+accesses, which are negligible compared to the dominant SRAM/buffer
+accesses. We also ignore static (leakage) energy, assuming a platform with
+ultra-low-leakage cells where dynamic energy costs are dominant.
+
+This section presents the quantitative analyses of energy
+consumption based on the analytical formulas of each part
+from the previous section. We will use the ratio between the
+SNN energy and its twin QNN energy ESNN /EANN as the
+primary factors to indicate the SNN’s energy efficiency.
+In section IV-A, we consider three typical software scenarios
+(different time steps length T and spike rate sr ) and three
+hardware settings of the energy cost of the data movements,
+and we conduct the energy efficiency comparison under the
+nine combinations to evaluate the energy efficiency of SNN
+with respect to the twin-QNN.
+Section IV-B provides a finer-grained sensitivity analysis
+on the effect of the SNN network parameters to ites energy
+consumption, providing more practical design guidance for the
+SNN models. The mapping of the models on the hardware
+system is a challenging task and might result in different
+distance (in terms of number of hops among cores) for data
+transfers across the cores, or resulting in different data reuse
+scenarions for both SNN and QNNs. Section IV-C further
+compare the QNN-SNN for different weigth reuse scenario
+and the number of hops, providing insights into the effect of
+mapping on the energy trade-offs, followed by a real-workload
+validation in Section IV-D.
+
+JOURNAL OF LATEX CLASS FILES
+
+6
+
+Hardware setting
+
+1) Efficient SNN (T = 2, sr = 0.02): Models an idealized
+SNN with a short time window and very low spike
+rate, representing a best-case scenario for SNN energy
+performance.
+2) Typical SNN (T = 4, sr = 0.1): Reflects parameters
+common in well-known SNN architectures like DIETSNN [32], VR-SNN [33], and Spikingformer [7], serving
+as a realistic baseline.
+3) High-Performance SNN (T = 32, sr = 0.20): This
+configuration represents SNNs where achieving high task
+accuracy is prioritized, a goal that often correlates with
+longer integration windows and higher spike rates. For
+instance, state-of-the-art models like Sorbet [10] achieve
+high performance on GLUE benchmarks while operating
+with a spike rate of approximately 20% (sr = 0.2). This
+scenario allows us to analyze the energy implications of
+such accuracy-focused SNN designs. For thus CV tasks,
+TCS-SNN and RMP-SNN both adapt time window size
+of 32-64 to achieve a higher detecting accuracy [34], [35].
+We also consider three hardware configurations: a theoretical minimum (to isolate algorithmic costs), a typical
+neuromorphic setting (to model a realistic implementation),
+and a theoretical worst sparse processing case (a condition
+least favorable to SNNs).
+1) Theoretical Minimum: Sets all data movement and
+move
+e move = 0),
+= 0, E
+dynamic control costs to zero (E
+isolating the fundamental energy of computation and
+static weight access.
+2) Typical Neuromorphic: This setting models a realistic
+deployment on specialized hardware. We adopt a sparse
+data movement energy cost inspired by Intel’s Loihi
+e move = 3.0 pJ/bit/hop. This
+neuromorphic chip, setting E
+number is an averaged energy cost reported for Loihi
+1 [17], including the overhead for transferring metadata
+such as the routing information. The dense data movemove
+= 0.25 pJ/bit/hop, is based on our own
+ment cost, E
+measurements for a circuit-switch NoC on a commercialized 22nm process. We assume a mapping where adjacent
+
+Fig. 3: Energy ratio ESNN /EANN across SNN Model Configurations (rows, defined by T, sr ) and Hardware Settings
+(columns). Within each cell, three bars correspond to comparing the SNN against QNNs with three activation densities.
+All calculations assume Nsrc = 4096 and 8-bit weights.
+Fundamental operational costs are: EACC = 0.05448 pJ,
+ECMP = 0.05448 pJ, ESUB = 0.05448 pJ. The QNN EMAC
+cost varies with T as detailed in Figure 4. These energy values
+are based on a 22nm technology process.
+Energy Consumption vs Activation Bit-width
+MAC energy for 4-bits weight
+MAC energy for 8-bits weight
+Energy for 4-16-bits Acc
+Energy for 8-16-bits Acc
+
+0.16
+0.14
+
+Energy (pJ)
+
+In this section, we evaluate the combinations of three
+typical software scenarios and three hardware settings; then
+compare the energy efficiency of SNNs and QNNs under these
+conditions.
+The three SNN model configurations vary in their time
+window size T and spike rate sr while the size of models
+are fixed to Nsrc = 4096 [31]. We note that with respect to
+the changes in T and sr , the bit-width of the QNN changes
+accordingly (Theorem 1 and Theorem 2, respectively). These
+cases are chosen to model scenarios ranging from highly
+efficient, sparse SNNs to less optimized, more active networks,
+with the typical case reflecting parameters common in stateof-the-art literature [7], [32]–[35]. In practice, these different
+model parameters need to be chosen with respect to the
+deployment power constraint and the application requirement
+of the model performance. Concretely, the three cases are:
+
+SNN parameters
+
+A. Energy Efficiency Landscape Across Diverse Configurations
+
+0.1442
+
+0.1172
+0.1086
+
+0.1018
+
+0.10
+0.0817
+0.0663
+
+0.1011
+0.0933
+
+0.0883
+0.0785
+
+0.0848
+
+0.0710
+
+0.06
+
+0.05448
+
+0.05021
+
+1
+
+0.1649
+
+0.1300
+
+0.1171
+
+0.12
+
+0.08
+
+0.1601
+
+2
+
+3
+
+4
+
+5
+
+Activation Bit-width
+
+6
+
+7
+
+8
+
+Fig. 4: Mac vs Acc
+layers are placed on adjacent cores, resulting in a hop
+count of 1.
+3) Worst-Case for Sparse Processing: This scenario models a hardware configuration fundamentally hostile to
+event-driven processing, representing the least favorable
+condition for SNNs. To model this high-energy context,
+we assume that every 1-bit spike necessitates a full 64bit word read from off-chip DRAM, the most energyintensive memory tier in our analysis. Based on energy
+values for a 64-bit DRAM access (approx. 1300 pJ [14]),
+the effective per-bit cost for a sparse access becomes an
+e move = 1300 pJ/bit. The corresponding dense
+extreme E
+move
+=
+data movement cost is the amortized value, E
+1300/64 ≈ 20.3 pJ/bit.
+For efficient SNN configurations (top two rows), the energy
+advantage over a QNN (the “Best case” scenario) can actually increase when moving from the Theoretical Minimum
+
+JOURNAL OF LATEX CLASS FILES
+
+7
+
+Hyperparameters setting
+
+Time Window Size
+
+
+
+
+
+Fig. 5: Sensitivity analysis of SNN and QNN energy consumption (pJ) versus SNN spike rate (sr ) under the Typical
+move
+e move = 3 pJ/bit/hop, number of hop equal to 1). Each subplot
+Neuromorphic hardware setting (E
+= 0.25 pJ/bit/hop, E
+corresponds to a specific SNN time window T (rows, T ∈ [1, 5]) and a configuration of weight precision (4-bit or 8-bit)
+and network size (Nsrc ∈ {64, 4096}) (columns). QNN energy (horizontal line) is calculated for a fixed activation sparsity of
+γ = 0.8.
+
+to the Typical Neuromorphic setting. This occurs because
+the added data movement costs penalize the multi-bit QNN
+activations compared to the 1-bit SNN spikes. However, any
+potential SNN advantage is eliminated and reversed under
+the Worst-sparse-processing hardware scenario, where extreme
+overheads on sparse processing overwhelm SNN benefits. This
+landscape view clearly illustrates that SNN energy efficiency
+is not absolute but a conditional property emerging from
+a complex interplay of algorithmic choices and hardware
+realities, motivating the fine-grained parameter study in the
+next section.
+B. Sensitivity Analysis of Neural Network Parameters
+Following the broad overview of the energy landscape, this
+section presents a fine-grained sensitivity analysis to quantify
+the impact of individual neural network parameters on energy
+consumption. For this study, we fix the hardware assumptions
+to the Typical Neuromorphic setting, as it represents a realistic
+deployment scenario for specialized accelerators. This allows
+us to isolate the effects of intrinsic model characteristics.
+Against a fixed, optimized QNN baseline with 80% activation sparsity [36], we systematically vary key SNN parameters—time window (T ), spike rate (sr ), weight precision (4-bit
+and 8-bit), and network size (Nsrc )—to quantify their influence
+
+on the energy ratio ESNN /EQNN . Figure 5 presents the results
+of this parametric sweep.
+Impact of Time Window (T ) and SNN Spike Rate
+(sr ): A primary observation is that as T increases, the SNN
+must operate at an increasingly lower spike rate (sr ) to
+remain energy-competitive with the QNN. For instance, with
+8-bit weights and Nsrc = 4096, the breakeven point where
+ESNN = EQNN occurs at sr ≈ 0.3 for T = 1, but this threshold
+tightens significantly to sr ≈ 0.082 for T = 3. This trend is
+expected, as the SNN’s dominant energy costs scale with the
+T · sr product, while the QNN’s energy cost increases more
+slowly with the QNN precision of ⌈log2 (T + 1)⌉.
+However, our analysis reveals a nuanced exception when
+transitioning from T = 3 to T = 4 (4bit weight and
+Nsrc = 64). The breakeven spike rate for T = 3 (sr ≈ 0.07)
+is slightly lower (i.e., more stringent) than for T = 4
+(sr ≈ 0.0072). This counter-intuitive result occurs because the
+QNN’s precision requirement jumps from 2 bits (⌈log2 (3+1)⌉)
+to 3 bits (⌈log2 (4 + 1)⌉), causing a step increase in its EMAC .
+The SNN’s energy increase from one additional timestep is
+less pronounced, making it comparatively more efficient at
+T = 4 than at T = 3. Despite this local anomaly, the
+overarching conclusion remains that larger T values impose
+severe constraints on the operational spike rate for SNNs to
+
+JOURNAL OF LATEX CLASS FILES
+
+maintain an energy advantage.
+Furthermore, Figure 5 highlights a critical threshold for the
+SNN’s internal data transmission strategy. For the Typical Neuromorphic setting, this threshold occurs at sr ≈ 0.12 − 0.17,
+depending on weight bit-width. When the SNN spike rate sr
+exceeds this value, the energy cost of handling sparse events
+e move + Eweight )) surpasses that of broadcasting
+(Nsrc T sr (E
+move
+data densely (Nsrc T (E
++ Eweight )). This indicates that for
+higher-activity SNNs, a dense dataflow can be more energyefficient than a sparse, event-driven one within the same
+architecture.
+Impact of Network Size (Nsrc ): To evaluate scalability, we
+compare SNN/QNN efficiency for a small network (Nsrc = 64)
+versus a larger network (Nsrc = 4096), using both 4-bit and
+8-bit weights and varying T and sr (Figure 5). While absolute
+energy values scale significantly with Nsrc (as most dominant
+energy terms are proportional to Nsrc ), the relative efficiency
+trends and the sr break-even points do not drastically change.
+For example, for T = 5 and 4-bit weights, the SNN-QNN
+breakeven sr is 0.058 for Nsrc = 4096 and remains similar at
+0.057 for Nsrc = 64. This suggests that while Nsrc dictates the
+magnitude of energy consumption, its impact on the relative
+SNN vs. QNN efficiency ranking (for a given T, sr ) is much
+less pronounced than that of T or sr itself.
+Impact of Weight Precision: Increasing weight precision
+relaxes the sparsity requirement for an SNN to achieve energy
+parity with a QNN, allowing the SNN to remain competitive
+at higher spike rates (sr ). For instance, in our evaluation with
+T = 2 and Nsrc = 4096, the breakeven spike rate sr increases
+from 0.105 for 4-bit weights to 0.123 for 8-bit weights. This
+trend is because higher precision disproportionately increases
+the energy of a QNN’s MAC operations relative to an SNN’s
+ACCs, amplifying the SNN’s efficiency. While both architectures consume more power at higher precision, the QNN’s
+baseline energy rises more sharply than the SNN’s energy.
+This dominant effect shifts the energy crossover point, making
+the SNN advantageous over a wider operational range.
+Overall Insights: Our sensitivity analysis identifies the
+SNN time windowsize and spike rate as the most critical
+algorithmic parameters governing relative energy efficiency.
+Our results quantify a clear trade-off: as T increases, the permissible spike rate for an SNN to remain energy-competitive
+shrinks dramatically. Under typical neuromorphic settings, our
+analysis shows that for SNNs to be more efficient than a
+comparable QNN, the spike rate (sr ) must be kept below
+5.7% once the time window (T ) exceeds five timesteps. This
+highlights the paramount importance of co-designing SNN
+models to operate with both short time windows and extreme
+sparsity.
+C. Analyses on the effect of mapping
+Routing distance In previous setting, we assumed adjacent
+layers are placed on adjacent cores, implying a hop count
+of 1. However, to provide a more comprehensive and realistic analysis, we relax the fixed hop count assumption by
+introducing khop , a factor representing the average number of
+inter-core hops per spike transfer. This lets us study mapping
+
+8
+
+scenarios from the best case with fully local activations
+(khop = 0) to practical low-hop deployments. For example,
+SNEAP evaluates SNN mapping on a 5×5 2D-mesh NoC with
+crossbar-based cores and uses an average hop count of 1.5 as a
+mapping metric [37]. We also use a VGG16-related reference
+based on neuromorphic mesh simulation with CanMore, which
+adopts mesh topology with XY routing and reports an average
+hop count of 0.64 [38], [39]. We incorporated this khop factor
+e move and E move ,
+by scaling the base data movement costs, E
+showing in Equation (16-19). For mesh-based systems with
+shortest-path or XY routing, Manhattan distance captures
+hop count and therefore serves as one proxy for mapping
+quality [40].
+
+weight 
+e d = BSNsrc (1 − γ) ⌈log2 (T + 1)⌉ khop E
+e move + E
+E
+QNN
+{z
+} RQNN
+|
+activation
+
+(16)
+
+E weight 
+d
+move
+E QNN = BSNsrc ⌈log2 (T + 1)⌉ khop E
++
+RQNN
+(17)
+
+weight 
+d
+eSNN
+e move + E
+E
+= BSNsrc T sr khop E
+RSNN
+
+E weight 
+d
+move
+E SNN = BSNsrc T khop E
++
+RSNN
+
+(18)
+(19)
+
+Weight reuse The degree of weight reuse is highly dependent
+on the mapping/dataflow, the hardware system configuration,
+and model parameters (e.g., hidden dimension, batch size, and
+sequence length). To capture this effect without committing to
+a compiler- or hardware-specific reuse scheme, we introduce
+two effective weight-reuse factors, RQNN and RSNN , for the
+QNN and SNN twins, respectively. Operationally, R denotes
+the average number of times a fetched weight can be reused
+before it must be loaded again, so the effective weight-loading
+energy is reduced from Eweight to Eweight /R.
+Importantly, RQNN and RSNN are not assumed to be equal
+in general. RQNN captures the reuse available to the QNN under a given mapping (e.g., spatial reuse, batching, or sequencelevel reuse), whereas RSNN captures the corresponding reuse
+for the SNN and may additionally include temporal reuse
+across timesteps. Since the same SNN weight can participate
+in computation over T timesteps, a hardware design that keeps
+weights resident near compute units can make RSNN significantly larger than RQNN , potentially by as much as a factor of
+T , and in this case, the total weight loading of SNN and QNN
+is the same. In contrast, if weights cannot be retained across
+timesteps and must be reloaded at each step, then the SNN
+does not benefit from this temporal reuse and RSNN becomes
+comparable to RQNN . This distinction is hardware-dependent.
+For example, previous SNN designs [41]–[44] show that
+temporal reuse across timesteps can be enabled by buffering
+intermediate temporal states and deferring spike generation,
+but such support is not universally available. Therefore, RQNN
+and RSNN should be treated as independent hardware/mapping
+parameters in the general model.
+
+JOURNAL OF LATEX CLASS FILES
+
+1.5
+
+SNN:
+Sparse→Dense transition
+QNN:
+Sparse→Dense transition
+
+1.5
+
+1.0
+
+0.0
+0
+
+1
+
+2
+
+4
+
+0
+0.0
+
+khop
+
+0.2
+
+0.4
+
+8
+
+10
+
+0.0
+0
+
+(a) RQNN , RSNN = 1, 1
+
+2
+
+1
+0
+0.0
+
+4
+
+khop
+
+0.2
+
+8
+
+0.4
+
+10
+
+0.0
+0
+
+(b) RQNN , RSNN = 1, T
+
+1.0
+
+Detailed View for khop in [0, 0.5]
+2
+khop = 0.05
+
+1
+
+0.5 (ESNN /EQNN = 1)
+
+6
+
+ESNN /EQNN
+Ratio
+Energy Parity
+(SNN = QNN)
+
+2.0
+
+SNN:
+Sparse→Dense transition
+QNN:
+Sparse→Dense transition
+
+1.5
+
+1.0
+
+Detailed View for khop in [0, 0.5]
+2
+khop = 0.67
+(ESNN /EQNN = 1)
+
+0.5
+
+6
+
+SNN:
+Sparse→Dense transition
+QNN:
+Sparse→Dense transition
+
+1.5
+
+1.0
+
+Detailed View for khop in [0, 0.5]
+2
+khop = 0.46
+(ESNN /EQNN = 1)
+
+0.5
+
+ESNN /EQNN
+Ratio
+Energy Parity
+(SNN = QNN)
+
+2.0
+
+Energy Ratio (SNN/QNN)
+
+ESNN /EQNN
+Ratio
+Energy Parity
+(SNN = QNN)
+
+2.0
+
+Energy Ratio (SNN/QNN)
+
+Energy Ratio (SNN/QNN)
+
+SNN:
+Sparse→Dense transition
+QNN:
+Sparse→Dense transition
+
+Energy Ratio (SNN/QNN)
+
+ESNN /EQNN
+Ratio
+Energy Parity
+(SNN = QNN)
+
+2.0
+
+9
+
+2
+
+4
+
+0
+0.0
+
+khop
+
+Detailed View for khop in [0, 0.5]
+2
+khop = 0.08
+
+1
+
+0.5 (ESNN /EQNN = 1)
+
+6
+
+0.2
+
+8
+
+0.4
+
+10
+
+0.0
+0
+
+2
+
+4
+
+0
+0.0
+
+khop
+
+0.2
+
+6
+
+8
+
+0.4
+
+10
+
+(d) RQNN , RSNN = 64, 64 ∗ T
+
+(c) RQNN , RSNN = 64, 64
+
+1.0
+
+1.20
+
+0.5
+
+0.85
+
+1
+
+1
+
+0.49
+10
+
+100
+
+SNN Weight Reuse Factor (RSNN )
+
+(a) khop = 0
+
+400
+
+0.13
+
+1.16
+
+1.2
+
+1
+
+1.0
+1
+
+1.06
+0.96
+
+1.1
+
+10
+
+0.86
+
+0.9
+100
+
+SNN Weight Reuse Factor (RSNN )
+
+400
+
+0.76
+
+1.4
+10
+
+1.45
+
+1.5
+
+1.26
+
+10
+
+1.61
+1.53
+
+1.6
+
+1.6
+
+1.4
+
+1.36
+
+1.69
+
+ESNN /EQNN
+
+1.56
+
+1.47
+
+100
+
+QNN Weight Reuse Factor (RQNN )
+
+1.92
+
+10
+
+1.57
+
+ESNN /EQNN
+
+ESNN /EQNN
+
+2.28
+
+1.67
+
+1.3
+
+2.64
+
+1.5
+
+3.00
+
+100
+
+QNN Weight Reuse Factor (RQNN )
+
+1.5
+
+2.5
+
+3.36
+
+2.0
+
+QNN Weight Reuse Factor (RQNN )
+
+100
+
+3.0
+
+Fig. 6: Ablation study on the number of hops under different reuse settings.
+
+1.37
+
+1.3
+
+1.29
+1.22
+1.14
+
+1.2
+
+1
+
+1
+
+(b) khop = 0.64 [39]
+
+10
+
+1.06
+
+1.1
+100
+
+SNN Weight Reuse Factor (RSNN )
+
+400
+
+0.98
+
+(c) khop = 1.5 [37]
+
+Fig. 7: Weight reuse factor 2D heatmaps. Each subplot (a–c) corresponds to a fixed routing cost, khop , of 0, 0.64, and 1.5.
+A ratio below 1.0 (blue) indicates that the SNN is more energy-efficient, while a ratio above 1.0 (red) favors the QNN. The
+parallelogram region defines the feasible ratio of RQNN and RSNN .
+To account for routing complexity and weight reuse, we
+rewrite the data-movement equations and extend the previous
+single-batch setting to the multi-batch case. Here, B and S
+denote batch size and sequence length, respectively. For nonTransformer workloads, we set S = 1.
+1) Analysis results on the number of hops khop : Figure 6
+shows the SNN/QNN energy ratio for a typical SNN setting
+(T = 4, sr = 0.1) as a function of khop under four
+representative reuse settings: (RQNN , RSNN ) = (1, 1), (1, T ),
+(64, 64), and (64, 64T ). These cases cover settings from
+single-sample inference (RQNN = 1) without temporal reuse
+(RSNN = RQNN ) to batch-64 inference (RQNN = 1) with full
+SNN temporal reuse (RSNN = RQNN ). For (RQNN , RSNN ) =
+(1, 1), i.e. single-batch, SNN without temporal reuse, the
+SNN/QNN ratio first drops to about 0.5 and then rises as
+khop increases. This suggests that SNNs benefit more from
+sparse activations because they can exploit bit-level sparsity,
+while QNNs are relatively better for dense data movement. The
+same overall trend appears in all four cases: larger khop hurts
+the SNN relative to its twin QNN. When khop is small, weight
+loading is still an important part of the total cost, and the SNN
+benefits from sparse activations. As khop grows, activation
+movement becomes the main cost, both models favor dense
+movement, and the energy ratio increases. The parity point
+also depends strongly on reuse. Without reuse, parity occurs
+at khop ≈ 0.46. With only SNN temporal reuse, it shifts to
+khop ≈ 0.67. When both models already have strong reuse,
+the parity point drops to about 0.05, and with additional SNN
+temporal reuse, it increases only slightly to about 0.08.
+2) Analysis results on the reuse factor: Figure 7 shows the
+SNN/QNN energy ratio as a joint function of RQNN and RSNN
+
+under three routing settings, khop ∈ {0, 0.64, 1.5} where the
+representative 0.64 and 1.5 are reported by implementation
+on real digital neuromorphic devices [37], [39]. The color
+represent how SNN is compared to the twin-QNN. Toward
+dark blue is where SNN is advantageous and dark red is where
+QNN wins. The parallelogram shows the feasible ratio of SNN
+and QNN’s reuse factor, (1, 1) for single-sample inference with
+no weight reuse. (T, 1) keeps a single sample but enables SNN
+temporal reuse over T steps. (64, 64) for batch-64 inference
+without temporal reuse, and (64T, 64) combines batch-64
+inference with full SNN temporal reuse. As we can seen from
+Figure 7, routing cost strongly affects the size of this region.
+At low khop (e.g., 0 or 0.64), SNNs have a wider energyefficient region. The reason is that, at small khop , activation
+movement is cheap compared with weight loading. In this
+regime, both SNNs and QNNs prefer sparse mode because
+sparsity reduces the weight-loading cost, but SNNs benefit
+more because they can further exploit bit-level sparsity. In
+contrast, when khop becomes large, such as 1.5, weight loading
+becomes a small part of the total cost, and activation movement
+dominates. Both models then favor dense mode, where the
+SNN no longer benefits much from sparsity and therefore has
+a harder time outperforming its twin QNN.
+
+D. Real-workload validation
+To validate the analytical trends on real models, we evaluate
+twin QNN–SNN pairs on both CV and Transformer workloads
+over CIFAR-10/100, ImageNet, and GLUE. Across all cases,
+the accuracy gap between the twins is small, which keeps the
+energy comparison fair.
+
+JOURNAL OF LATEX CLASS FILES
+
+10
+
+VGG16 across time windows. For this analysis, we set the
+average hop count to khop = 0.64 [39].5 We set RQNN =
+B · Hout · Wout to model full spatial reuse of each kernel, and
+RSNN = B ·T · Hout ·Wout to capture the extra temporal reuse
+across T steps. Table II shows that QNN–SNN conversion
+is nearly lossless on both CIFAR-10 and CIFAR-100. In
+contrast, the energy trend becomes less favorable to SNNs
+as T increases. On CIFAR-10, the SNN is slightly better at
+T = 3 (ESNN /EQNN = 0.982), and becomes clearly worse at
+larger T (1.400 to 2.236 for T = 5 to 7). On CIFAR-100, the
+SNN is already worse at T = 3 (1.257), and the gap grows
+further as T increases.
+TABLE II: QNN vs. SNN accuracy and sparsity for VGG16
+on CIFAR10 and CIFAR100 across time steps T .
+Time Steps (T )
+Metric
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+CIFAR100 / VGG16
+QNN accuracy(%)
+SNN accuracy(%)
+QNN avg. density rate (%)
+SNN avg. spike rate (%)
+SNN / QNN energy
+
+63.31
+63.24
+15.39
+7.09
+1.257
+
+69.91
+69.72
+21.52
+8.39
+1.311
+
+71.52
+71.43
+26.34
+9.50
+1.629
+
+72.16
+72.08
+29.45
+10.04
+1.946
+
+72.26
+72.45
+32.30
+10.69
+2.262
+
+72.80
+72.97
+34.30
+10.94
+1.952
+
+CIFAR10 / VGG16
+QNN accuracy (%)
+SNN accuracy (%)
+QNN avg. density rate (%)
+SNN avg. spike rate(%)
+SNN / QNN energy
+
+81.73
+82.09
+12.20
+5.49
+0.982
+
+90.86
+90.71
+16.52
+6.43
+1.022
+
+92.16
+91.82
+19.89
+7.10
+1.400
+
+93.01
+92.93
+22.98
+7.73
+1.818
+
+93.09
+93.11
+25.45
+8.19
+2.236
+
+92.93
+92.94
+27.39
+8.52
+1.960
+
+Generalization to other CV models. Table III shows the
+same trend beyond VGG16. Under low-T settings (T=3), the
+SNN can remain close to the QNN and may even be slightly
+better, as in VGG16 on CIFAR-10 (0.982). However, this
+advantage is not stable across models or datasets. ResNet-18
+gives ratios of 1.065 on CIFAR-10 and 1.017 on CIFAR-100,
+while RepVGG [45] on ImageNet reaches 2.228. For all CV
+models, we use the same hop count and reuse setting as in
+VGG16. These results show that SNNs are only competitive in
+a narrow regime with short time windows and low spike rates.
+As activity or T increases, the QNN becomes more energy
+efficient.
+Transformer workloads. For Transformer workloads, we
+use khop = 4.75, based on the average hop count reported for
+transformer-like models in Allspark (range: 2.59–8.48) [47]. In
+practice, however, the final energy ratio is insensitive to khop .
+The reason is that both QNNs and SNNs fall into the dense
+data-movement regime for Transformer workloads because the
+QNN density and SNN spike rate are both relatively high.
+At the same time, the large reuse factors, RQNN = B · S
+and RSNN = B · S · T , make the amortized weight-loading
+cost negligible. Under this regime, the dominant term is the
+temporal factor, which gives
+ESNN
+T
+≈
+.
+EQNN
+⌈log2 (T + 1)⌉
+Table IV shows that, on SST-2, the SNN/QNN energy ratio
+rises from 0.996 at T = 1 to 1.499, 2.336, and 3.760 at T = 3,
+5 A VGG16-related reference from a neuromorphic mesh simulation using
+CanMore [38] reports 71M spikes/frame and 45.4M hops/frame for VGG16,
+which implies about 0.64 hops per spike.
+
+TABLE III: CV benchmarks. We use T = 3 for VGG16 and
+ResNet-18, and T = 10 for RepVGG (RepVGGplus-L2pse)
+on ImageNet, which requires a slightly larger time window to
+reach comparable accuracy [46].
+CIFAR-10
+
+QNN accuracy (%)
+SNN accuracy (%)
+QNN density rate (%)
+SNN spike rate (%)
+SNN / QNN energy
+
+CIFAR-100
+
+ImageNet
+
+VGG16
+
+ResNet-18
+
+VGG16
+
+ResNet-18
+
+RepVGG
+
+81.73
+82.09
+12.20
+5.49
+0.982
+
+91.68
+91.75
+9.10
+5.90
+1.065
+
+63.31
+63.24
+15.39
+7.09
+1.257
+
+69.92
+67.52
+8.79
+5.63
+1.017
+
+78.274
+78.232
+32.88
+12.41
+2.228
+
+TABLE IV: SST-2 across T ∈ {1, 3, 7, 15}.
+
+QNN accuracy (%)
+SNN accuracy (%)
+QNN density rate (%)
+SNN spike rate (%)
+SNN / QNN energy
+
+T =1
+
+T =3
+
+T =7
+
+T = 15
+
+68.23
+66.51
+47.54
+43.34
+0.996
+
+90.14
+89.91
+53.03
+34.01
+1.499
+
+91.74
+91.51
+58.27
+31.63
+2.336
+
+91.74
+91.63
+59.58
+30.36
+3.760
+
+7, and 15, respectively. The same trend appears across all seven
+GLUE tasks at the 2-bit point (T = 3) in Table V: the energy
+ratio stays near 1.499, while the accuracy gap between the
+twins remains small.
+TABLE V: GLUE 7 tasks at 2-bit with T = 3.
+
+QNN accuracy (%)
+SNN accuracy (%)
+QNN density rate (%)
+SNN spike rate (%)
+SNN / QNN energy
+
+MNLI QQP QNLI SST-2 STS-B
+
+RTE
+
+MRPC
+
+78.03
+77.59
+50.12
+32.78
+1.500
+
+70.40
+69.31
+55.71
+35.87
+1.499
+
+88.19
+87.13
+48.64
+31.61
+1.499
+
+85.92
+85.80
+51.19
+31.42
+1.498
+
+87.22
+86.71
+48.49
+31.25
+1.499
+
+90.14
+89.91
+53.03
+34.01
+1.499
+
+83.83
+83.13
+49.84
+32.23
+1.499
+
+Thus, the real-workload results match the analytical trend:
+SNNs are energy efficient only in a narrow regime with small
+time windows and high sparsity.
+V. D ISCUSSION
+A. SNN aggregated transmission
+As discussed in Section III-B, the timestep-level transmission strategy (SNN) exploits fine-grained temporal sparsity
+by transmitting spike events individually at each timestep.
+However, this approach incurs the cost of sending the full spike
+train of length T without compression. In contrast, aggregated
+transmission strategies (SNN′ ) have recently gained popularity [33]. For instance, in rate encoding, a spike train of length
+T can encode spike counts from 0 to T using only log2 (T +1)
+bits; specifically, a spike train with T = 7 timesteps can
+represent spike counts (0–7) with just 3 bits, greatly reducing
+transmission overhead. Although this aggregated approach
+significantly reduces data volume, it sacrifices the opportunity
+to exploit sparsity at the individual timestep level. The only
+case in which timestep-level sparsity is effectively leveraged
+is when the spike train contains no spikes at all, allowing the
+entire transmission to be skipped. Consequently, the effective
+sparsity for such aggregated methods is determined not by
+the spike rate, but rather by the activation-level sparsity γ,
+analogous to QNNs. The corresponding data movement energy
+equations for aggregated transmission are:
+
+JOURNAL OF LATEX CLASS FILES
+
+11
+
+e d ′ = Nsrc · (1 − γ) · (log2 T ·E
+e move + E weight )
+E
+SNN
+|
+
+{z
+
+(20)
+
+}
+
+spike rate matches ANN density
+d
+move
+E SNN′ = Nsrc · (log2 T · E
++ E weight )
+
+(21)
+
+Since these aggregated encoding schemes share identical
+data movement costs with QNNs, they underscore the structural similarity between SNNs and QNNs. Moreover, given
+comparable per-bit movement energies, the choice between
+uncompressed (timestep-level) and compressed (aggregated)
+spike train transmission ultimately reduces to a critical tradeoff: whether the spike-level sparsity in the SNN is sufficiently
+high to achieve greater energy efficiency than the aggregated
+approach, characterized by its compressed log2 T -bit representation.
+
+operational points, a well-optimized QNN is often the more
+energy-efficient choice. In summary, this work provides a
+quantitative framework to guide model selection and emphasizes the necessity of algorithm-hardware co-design for
+realizing the energy-saving potential of SNNs.
+VII. ACKNOWLEDGMENT
+The authors acknowledge the use of generative AI tools,
+including ChatGPT, during the preparation of this manuscript
+and the research process. These tools were used to assist with
+improving the readability and clarity of the manuscript, as
+well as to support preliminary drafting, code development, and
+research-related discussions. All AI-assisted content, code, and
+suggestions were carefully reviewed, revised, and validated
+by the authors. The authors take full responsibility for the
+accuracy, originality, and integrity of the final manuscript.
+
+B. Latency
+
+A PPENDIX
+
+Although this work focuses on first-principles energy, the
+same framework also suggests a first-order latency trade-off.
+Relative to its twin QNN, an SNN distributes inference over
+T timesteps and executes approximately Nsrc T sr active accumulations, plus per-step threshold/reset operations, whereas
+the QNN executes approximately Nsrc (1 − γ) active MACs
+in one pass. Hence, from an operation-count perspective, an
+SNN can only obtain a first-order latency-side advantage when
+T sr ≲ (1 − γ), or more generally, T sr ≲ k(1 − γ), with
+k = EMAC /EACC . This bound is optimistic, however, because
+it assumes that sparsity can be exploited with negligible control overhead. In real systems, latency is also affected by eventrouting cost, arbitration, synchronization, spike-distributioninduced load imbalance, routing distance, and weight reuse.
+These factors depend strongly on system scale and mapping,
+and can create non-trivial energy–latency trade-offs. For example, while sparsity may reduce arithmetic work and energy, it
+may also lower arithmetic intensity and thereby hurt scalability
+on larger systems. For this reason, the present paper centers on
+energy, whose dominant first-principles components are more
+portable across implementations than latency.
+
+A. Proof for Theorem 1
+Proof Outline. The argument proceeds as follows: Lemma 1
+first establishes that the membrane potential vil (t) of target
+neuron i in layer l remains bounded within [0, θil ) under the
+stated input condition. This ensures that the residual potential
+vil (T ) at the end of the time window T also lies in this range.
+Lemma 2 then shows that, when the influence of the bounded
+residual potential vil (T ) on the total output spike count is
+negligible, the SNN neuron’s T + 1 discrete output levels can
+be matched by a QNN neuron employing at most ⌈log2 (T +1)⌉
+bits. Finally, Corollary 1 addresses the non-ideal case where
+this simplifying assumption does not fully hold. In such cases,
+the effective information representation capability of the SNN
+neuron does not exceed, and may be lower than, that of the
+corresponding ⌈log2 (T + 1)⌉-bit QNN neuron.
+Lemma 1. Consider a target IF neuron i in layer l without
+leakage and employing a reset-by-subtraction mechanism with
+firing threshold θil . If at each timestep t ∈ [1, T ], the net input
+current
+X
+l l−1
+wij
+Iil (t) =
+sj (t)
+j∈Sil−1
+
+VI. C ONCLUSION
+This paper addresses the conditions under which spiking
+neural networks achieve better energy efficiency compared to
+equivalent quantized ANNs. Through an analysis grounded in
+a fair comparison between models with equivalent information
+representation, we find that SNN energy efficiency is not a
+given, but requires a confluence of favorable algorithmic and
+hardware properties. At a high level, the design space for
+energy-efficient SNNs depends on achieving a low total number of spike events (a low T · s product), hardware optimized
+e move ), and a
+for low-cost sparse event processing (minimal E
+substantial MAC-to-ACC energy ratio (EMAC ≫ T · EACC ).
+Our analysis provides specific design guidance based on these
+factors. For instance, under typical neuromorphic hardware
+settings, we recommend that for an SNN to be selected, its
+time window should be kept below five timesteps (T <= 5)
+with a spike rate below approximately 5.7%. Beyond these
+
+satisfies 0 ≤ Iil (t) < θil , then the membrane potential vil (t)
+remains bounded such that
+0 ≤ vil (t) < θil ,
+
+∀t ∈ [1, T ],
+
+assuming vil (0) = 0.
+Proof. The membrane potential vil (t) evolves as vil (t) = vil (t−
+1) + Iil (t) − θil sli (t), where sli (t) ∈ {0, 1} is the output spike
+at timestep t, and vil (0) = 0. We prove 0 ≤ vil (t) < θil by
+induction on t. Base case (t = 0): vil (0) = 0, so 0 ≤ vil (0) <
+θil holds. Inductive step: Assume 0 ≤ vil (t−1) < θil for some
+t ≥ 1. At timestep t:
+l
+l
+• No spike emitted (si (t) = 0): This occurs if vi (t −
+l
+l
+l
+l
+l
+1) + Ii (t) < θi . Then, vi (t) = vi (t − 1) + Ii (t). Since
+vil (t − 1) ≥ 0 and Iil (t) ≥ 0 , vil (t) ≥ 0. By the condition
+for no spike, vil (t) < θil . Thus, 0 ≤ vil (t) < θil .
+
+JOURNAL OF LATEX CLASS FILES
+
+•
+
+12
+
+Spike emitted (sli (t) = 1): This occurs if vil (t − 1) +
+Iil (t) ≥ θil . Then, vil (t) = vil (t − 1) + Iil (t) − θil . Since
+vil (t − 1) + Iil (t) ≥ θil , it follows that vil (t) ≥ 0. Furthermore, given vil (t − 1) < θil (by induction hypothesis) and
+Iil (t) < θil (by premise), we have vil (t − 1) + Iil (t) < 2θil .
+Therefore, vil (t) = vil (t − 1) + Iil (t) − θil < 2θil − θil = θil .
+Thus, 0 ≤ vil (t) < θil .
+
+In both cases, 0 ≤ vil (t) < θil holds, completing the induction.
+
+Lemma 2. Assume a target IF neuron i in layer l receives
+l−1
+input spike trains sl−1
+j (t) from its incoming input set Si
+l
+with weights wij over T timesteps. Let
+kjl−1 =
+
+T
+X
+
+sl−1
+j (t)
+
+t=1
+
+be the total input spikes from source input j. If the conditions
+of Lemma 1 are met, then the SNN output representation of
+this target neuron can be matched by a QNN neuron whose
+activation function produces ⌈log2 (T + 1)⌉ distinct levels.
+Proof. TheP
+dynamics of the membrane potential are vil (t) =
+l
+l l−1
+vi (t − 1) + j wij
+sj (t) − θil sli (t), with vil (0) = 0. Summing
+this relation from t = 1 to T yields:
+T
+X
+
+T
+XX
+
+(vil (t) − vil (t − 1)) =
+
+t=1
+
+t=1
+
+l l−1
+wij
+sj (t) −
+
+j
+
+T
+X
+
+wl kl−1
+
+Proof. By Lemmas 1 and 2, when the condition in Lemma 1
+holds, the spike count nli exactly matches the corresponding
+quantized output of the QNN.
+If the residual bound is violated, then the equality above is
+no longer guaranteed. In particular, whenever
+vil (T ) ≥ θil ,
+we have
+l l−1
+j wij kj
+θil
+
+t=1
+
+Rearranging for nli , which is an integer by definition:
+
+P
+
+Corollary 1. If the conditions stipulated in Lemma 1 are
+violated (e.g., if net input current Iil (t) ≥ θil for some t,
+potentially leading to vil (t) not being constrained within [0, θil )
+in the manner assumed
+the exact derivation), the precise
+P for
+l l−1
+relationship nli = ⌊( j wij
+kj )/θil ⌋ may be perturbed. Such
+deviations can reduce the SNN’s encoding precision, ensuring
+that its useful information representation capacity generally
+does not exceed that of an idealized QNN with ⌈log2 (T + 1)⌉
+bits.
+
+$P
+
+j
+
+P
+
+To represent these T + 1 distinct values, a QNN requires
+⌈log2 (T + 1)⌉ bits of precision for its output activations.
+
+θil sli (t).
+
+The left side is a telescoping sum, vil (T ) − vil (0). Let nli =
+P
+T
+sli (t) be the integer count of output spikes, and kjl−1 =
+Pt=1
+T
+l−1
+t=1 sj (t) be the total input spikes from presynaptic neuron
+j. Since vil (0) = 0, we have:
+X
+l l−1
+vil (T ) =
+wij
+kj − θil nli .
+
+nli =
+
+P l l−1
+P l l−1
+kj )/T . We can build a QNN’s
+aj = ( j wij
+zil = j wij
+activation function h(zil ) to map the output of SNN exactly:
+$P
+%
+
+ l
+l l−1
+w
+k
+1
+1
+z
+·
+T
+nli 6
+ij
+j
+j
+i
+h(zil ) =
+=
+=
+.
+T
+T
+T
+θil
+θil
+
+l l−1
+− vil (T )
+j wij kj
+.
+θil
+v l (T )
+
+Let X = j θijl j and ϵ = iθl . The equation becomes
+i
+i
+nli = X − ϵ, which implies X = nli + ϵ. Under the conditions
+of Lemma 1, 0 ≤ vil (T ) < θil , which implies 0 ≤ ϵ < 1. Since
+nli is an integer and 0 ≤ ϵ < 1, nli = ⌊X⌋. Therefore, the
+number of output spikes is given exactly by:
+%
+$P
+l l−1
+j wij kj
+l
+.
+ni =
+θil
+The average output firing rate of target neuron i in layer
+nl
+l is ϕli = Ti . An SNN neuron can produce integer spike
+counts belong to {0, 1, . . . , T }. This results in T + 1 distinct
+output levels. For an equivalent QNN, let its input activations
+be al−1
+= kjl−1 /T . The QNN computes a pre-activation
+j
+
+%
+
+and thus
+
+= nli +
+$P
+
+nli <
+
+ l
+
+vi (T )
+≥ nli + 1,
+θil
+
+l l−1
+j wij kj
+θil
+
+%
+.
+
+This indicates that the realized SNN output no longer attains
+the full output alphabet constructed in Lemma 2. Hence, its
+effective representation capability is lower than that of the
+ideal matching case, and therefore cannot exceed that of the
+corresponding ⌈log2 (T + 1)⌉-bit QNN neuron.
+B. Proof for Theorem 2
+l−1
+Proof. Let the QNN have Nsrc,i
+incoming inputs to the target
+neuron i at layer l. The number of incoming inputs with
+l−1
+non-zero activations is (1 − γil−1 )Nsrc,i
+. Each such non-zero
+l−1
+QNN activation aj is interpreted as an average rate or signal
+strength. To represent this input value al−1
+using rate coding
+j
+in an SNN over a time window of T discrete timesteps, the
+corresponding incoming input j of the SNN would receive
+kjl−1 = al−1
+j T spikes during this window. For incoming
+inputs where the QNN activation al−1
+= 0, the SNN receives
+j
+kjl−1 = 0 spikes.
+6 The function h(z l ) is the conversion function from real numbers to fixedi
+point representation during the quantization aware training process. During
+inference, the weights are quantized to integers and the activation zil are
+, where N is unsigned integers. So, h(zil ) function is
+fix-point values ∈ N
+T
+executed as zil /θil and θil is usually chosen as 1 or a power of 2 [12], [48].
+Then this division can be implemented as a bit shift with negligible energy
+overhead.
+
+JOURNAL OF LATEX CLASS FILES
+
+The total number of input spikes received by the SNN across
+l−1
+all Nsrc,i
+incoming inputs during the window T is the sum of
+spikes from active incoming inputs:
+
+13
+
+R EFERENCES
+
+[1] J. K. Eshraghian, M. Ward, E. O. Neftci, X. Wang, G. Lenz, G. Dwivedi,
+M. Bennamoun, D. S. Jeong, and W. D. Lu, “Training spiking neural
+networks using lessons from deep learning,” Proceedings of the IEEE,
+l−1
+2023.
+Nsrc,i
+X
+X
+X
+[2] C. Ganguly and S. Chakrabarti, “A discrete time framework for spike
+l−1
+l−1
+l−1
+kj =
+(aj T ) = T
+aj .
+transfer process in a cortical neuron with asynchronous epsp, ipsp,
+l−1
+l−1
+j=1
+and variable threshold,” IEEE Transactions on Neural Systems and
+j s.t. aj ̸=0
+j s.t. aj ̸=0
+Rehabilitation Engineering, vol. 28, no. 4, pp. 772–781, 2020.
+[3] B. Rueckauer, I.-A. Lungu, Y. Hu, M. Pfeiffer, and S.-C. Liu, “Conl−1
+The average SNN input spike rate sr,i is defined as the
+version of continuous-valued deep networks to efficient event-driven
+networks for image classification,” Frontiers in Neuroscience, vol. 11,
+total input spikes normalized by the total number of incoming
+p. 682, 2017.
+inputs and the number of timesteps:
+[4] X. Wu, Y. Zhao, Y. Song, Y. Jiang, Y. Bai, X. Li, Y. Zhou, X. Yang,
+and Q. Hao, “Dynamic threshold integrate and fire neuron model for low
+l−1
+P
+P
+PNsrc,i
+l−1
+l−1
+T j s.t. al−1 ̸=0 al−1
+latency spiking neural networks,” Neurocomputing, vol. 544, p. 126247,
+j
+j s.t. al−1
+̸=0 aj
+j=1 kj
+j
+j
+l−1
+sr,i =
+=
+=
+. 2023.
+l−1
+l−1
+l−1
+Nsrc,i · T
+Nsrc,i · T
+Nsrc,i
+[5] R. B. Stein, E. R. Gossen, and K. E. Jones, “Neuronal variability: noise
+or part of the signal?” Nature Reviews Neuroscience, vol. 6, no. 5, pp.
+l−1
+389–397, 2005.
+Let Nactive = (1 − γil−1 )Nsrc,i
+be the number of in[6] R. Brette, “Philosophy of the spike: rate-based vs. spike-based theories
+coming
+inputs with non-zero QNN activations. The sum
+of the brain,” Frontiers in systems neuroscience, vol. 9, p. 151, 2015.
+P
+l−1
+[7] C. Zhou, L. Yu, Z. Zhou, Z. Ma, H. Zhang, H. Zhou, and Y. Tian,
+is bounded. Given the assumption that each
+l−1
+j s.t. aj ̸=0 aj
+“Spikingformer: Spike-driven residual learning for transformer-based
+of the Nactive non-zero activations al−1
+is in the range [1/T, 1]:
+spiking neural network,” arXiv preprint arXiv:2304.11954, 2023.
+j
+[8] M. Bal and A. Sengupta, “Spikingbert: Distilling bert to train spiking
+• The minimum sum occurs when all Nactive activations take
+language models using implicit differentiation,” in Proceedings of the
+the value 1/T :
+AAAI conference on artificial intelligence, vol. 38, no. 10, 2024, pp.
+10 998–11 006.
+
+
+[9] X. Xing, Z. Zhang, Z. Ni, S. Xiao, Y. Ju, S. Fan, Y. Wang, J. Zhang, and
+G. Li, “Spikelm: Towards general spike-driven language modeling via
+1
+
+ X
+l−1 1
+al−1
+= (1−γil−1 )Nsrc,i
+· .
+min 
+elastic bi-spiking mechanisms,” arXiv preprint arXiv:2406.03287, 2024.
+j  = Nactive ·
+T
+T
+[10] K. Tang, Z. Yan, and W.-F. Wong, “Sorbet: A neuromorphic hardware=
+̸
+0
+j s.t. al−1
+j
+compatible transformer-based spiking language model,” arXiv preprint
+arXiv:2409.15298, 2024.
+• The maximum sum occurs when all Nactive activations
+[11] M. Dampfhoffer, T. Mesquida, A. Valentian, and L. Anghel, “Are
+snns really more energy-efficient than anns? an in-depth hardwaretake the value 1:
+aware study,” IEEE Transactions on Emerging Topics in Computational
+
+
+Intelligence, vol. 7, no. 3, pp. 731–741, 2022.
+X
+[12] Z. Yan, J. Zhou, and W.-F. Wong, “Cq+ + training: Minimizing accu
+l−1
+l−1
+l−1 
+aj  = Nactive ·1 = (1−γi )Nsrc,i ·1.
+max 
+racy loss in conversion from convolutional neural networks to spiking
+neural networks,” IEEE Transactions on Pattern Analysis and Machine
+=
+̸
+0
+j s.t. al−1
+j
+Intelligence, vol. 45, no. 10, pp. 11 600–11 611, 2023.
+[13] W. A. Wulf and S. A. McKee, “Hitting the memory wall: Implications
+l−1
+Substituting these bounds into the expression for sr,i :
+of the obvious,” ACM SIGARCH computer architecture news, vol. 23,
+no. 1, pp. 20–24, 1995.
+l−1
+l−1
+l−1
+(1−γi )Nsrc,i (1/T )
+1−γ
+l−1
+[14] M. Horowitz, “1.1 computing’s energy problem (and what we can do
+• Minimum sr,i =
+= Ti .
+l−1
+Nsrc,i
+about it),” in 2014 IEEE international solid-state circuits conference
+l−1
+(1)
+(1−γil−1 )Nsrc,i
+digest of technical papers (ISSCC). IEEE, 2014, pp. 10–14.
+l−1
+l−1
+= 1 − γi .
+• Maximum sr,i =
+l−1
+[15] Y.-H. Chen, T.-J. Yang, J. Emer, and V. Sze, “Eyeriss v2: A flexible
+Nsrc,i
+accelerator for emerging deep neural networks on mobile devices,” IEEE
+1−γ l−1
+l−1
+Journal on Emerging and Selected Topics in Circuits and Systems, vol. 9,
+Thus, we establish the bounds Ti ≤ sl−1
+.
+r,i ≤ 1−γi
+no. 2, pp. 292–308, 2019.
+[16] W. Wei, M. Zhang, J. Zhang, A. Belatreche, J. Wu, Z. Xu, X. Qiu,
+H. Chen, Y. Yang, and H. Li, “Event-driven learning for spiking neural
+C. Proof for Proposition 1
+networks,” arXiv preprint arXiv:2403.00270, 2024.
+[17] M. Davies, N. Srinivasa, T.-H. Lin, G. Chinya, Y. Cao, S. H. Choday,
+Proof. Part (a) follows by applying Theorem 1 independently
+G. Dimou, P. Joshi, N. Imam, S. Jain et al., “Loihi: A neuromorphic
+manycore processor with on-chip learning,” Ieee Micro, vol. 38, no. 1,
+to every neuron while preserving the original network connecpp. 82–99, 2018.
+tivity.
+[18] F. Akopyan, J. Sawada, A. Cassidy, R. Alvarez-Icaza, J. Arthur,
+For part (b), Theorem 2 holds for every neuron (i, l) ∈ N .
+P. Merolla, N. Imam, Y. Nakamura, P. Datta, G.-J. Nam et al.,
+“Truenorth: Design and tool flow of a 65 mw 1 million neuron
+Multiplying
+programmable neurosynaptic chip,” IEEE transactions on computeraided design of integrated circuits and systems, vol. 34, no. 10, pp.
+1 − γil−1
+l−1
+1537–1557, 2015.
+≤ sr,i
+≤ 1 − γil−1
+T
+[19] J. Vasiljevic, L. Bajic, D. Capalija, S. Sokorac, D. Ignjatovic, L. Bajic,
+M. Trajkovic, I. Hamer, I. Matosevic, A. Cejkov et al., “Compute
+l−1
+by Nsrc,i
+, summing over all (i, l) ∈ N , and normalizing by
+substrate for software 2.0,” IEEE micro, vol. 41, no. 2, pp. 50–55, 2021.
+P
+l−1
+[20] S. Lie, “Cerebras architecture deep dive: First look inside the hw/sw coN
+gives
+src,i
+(i,l)∈N
+design for deep learning: Cerebras systems,” in 2022 IEEE Hot Chips
+34 Symposium (HCS). IEEE Computer Society, 2022, pp. 1–34.
+1−γ
+[21] R. Prabhakar, S. Jairath, and J. L. Shin, “Sambanova sn10 rdu: A
+≤ sr ≤ 1 − γ.
+7nm dataflow architecture to accelerate software 2.0,” in 2022 IEEE
+T
+International Solid-State Circuits Conference (ISSCC), vol. 65. IEEE,
+2022, pp. 350–352.
+
+JOURNAL OF LATEX CLASS FILES
+
+[22] A. Lines, P. Joshi, R. Liu, S. McCoy, J. Tse, Y.-H. Weng, and M. Davies,
+“Loihi asynchronous neuromorphic research chip,” Energy, vol. 10,
+no. 15, pp. 10–1109, 2018.
+[23] C.-K. Lin, A. Wild, G. N. Chinya, T.-H. Lin, M. Davies, and H. Wang,
+“Mapping spiking neural networks onto a manycore neuromorphic
+architecture,” ACM SIGPLAN Notices, vol. 53, no. 4, pp. 78–89, 2018.
+[24] T. G. Rogers, M. O’Connor, and T. M. Aamodt, “Divergence-aware warp
+scheduling,” in Proceedings of the 46th Annual IEEE/ACM international
+symposium on microarchitecture, 2013, pp. 99–110.
+[25] M. A. Ibrahim, O. Kayiran, Y. Eckert, G. H. Loh, and A. Jog, “Analyzing
+and leveraging shared l1 caches in gpus,” in Proceedings of the ACM
+International Conference on Parallel Architectures and Compilation
+Techniques, 2020, pp. 161–173.
+[26] D. S. Modha, F. Akopyan, A. Andreopoulos, R. Appuswamy, J. V.
+Arthur, A. S. Cassidy, P. Datta, M. V. DeBole, S. K. Esser, C. O. Otero
+et al., “Neural inference at the frontier of energy, space, and time,”
+Science, vol. 382, no. 6668, pp. 329–335, 2023.
+[27] C. Pehle, S. Billaudelle, B. Cramer, J. Kaiser, K. Schreiber, Y. Stradmann, J. Weis, A. Leibfried, E. Müller, and J. Schemmel, “The
+brainscales-2 accelerated neuromorphic system with hybrid plasticity
+front,” 2022.
+[28] W. J. Dally and B. P. Towles, Principles and practices of interconnection
+networks. Elsevier, 2004.
+[29] L. Benini and G. De Micheli, “Networks on chips: A new soc paradigm,”
+computer, vol. 35, no. 1, pp. 70–78, 2002.
+[30] N. D. E. Jerger and L.-S. Peh, On-chip networks. Springer, 2009, vol.
+140.
+[31] H. Touvron, T. Lavril, G. Izacard, X. Martinet, M.-A. Lachaux,
+T. Lacroix, B. Rozière, N. Goyal, E. Hambro, F. Azhar et al.,
+“Llama: Open and efficient foundation language models,” arXiv preprint
+arXiv:2302.13971, 2023.
+[32] N. Rathi and K. Roy, “Diet-snn: A low-latency spiking neural network
+with direct input encoding and leakage and threshold optimization,”
+IEEE Transactions on Neural Networks and Learning Systems, vol. 34,
+no. 6, pp. 3174–3182, 2023.
+[33] Z. Yan, K. Tang, J. Zhou, and W.-F. Wong, “Low latency conversion
+of artificial neural network models to rate-encoded spiking neural networks,” IEEE Transactions on Neural Networks and Learning Systems,
+pp. 1–12, 2025.
+[34] B. Han and K. Roy, “Deep spiking neural network: Energy efficiency
+through time based coding,” in European conference on computer vision.
+Springer, 2020, pp. 388–404.
+[35] B. Han, G. Srin, and K. Roy, “Rmp-snn: Residual membrane potential
+neuron for enabling deeper high-accuracy and low-latency spiking neural
+network,” in Proceedings of the IEEE/CVF conference on computer
+vision and pattern recognition, 2020, pp. 13 558–13 567.
+[36] R. Gong, Y. Yong, Z. Wang, J. Guo, X. Wei, Y. Ma, and X. Liu,
+“Fast and controllable post-training sparsity: Learning optimal sparsity
+allocation with global constraint in minutes,” in Proceedings of the AAAI
+Conference on Artificial Intelligence, vol. 38, no. 11, 2024, pp. 12 190–
+12 198.
+[37] S. Li, S. Guo, L. Zhang, Z. Kang, S. Wang, W. Shi, L. Wang, and W. Xu,
+“Sneap: A fast and efficient toolchain for mapping large-scale spiking
+neural network onto noc-based neuromorphic platform,” in Proceedings
+of the 2020 on Great Lakes Symposium on VLSI, ser. GLSVLSI ’20.
+New York, NY, USA: Association for Computing Machinery, 2020, p.
+9–14. [Online]. Available: https://doi.org/10.1145/3386263.3406900
+[38] J. Zhang, J. Zhang, D. Huo, and H. Chen, “Anas: Asynchronous
+neuromorphic hardware architecture search based on a system-level
+simulator,” in 2023 60th ACM/IEEE Design Automation Conference
+(DAC), 2023, pp. 1–6.
+[39] W. Wei, M. Zhang, H. Qu, A. Belatreche, J. Zhang, and H. Chen,
+“Temporal-coded spiking neural networks with dynamic firing threshold: Learning with event-driven backpropagation,” in 2023 IEEE/CVF
+International Conference on Computer Vision (ICCV), 2023, pp. 10 518–
+10 528.
+[40] O. Jin, Q. Xing, Y. Li, S. Deng, S. He, and G. Pan, “Mapping
+very large scale spiking neuron network to neuromorphic hardware,”
+in Proceedings of the 28th ACM International Conference on
+Architectural Support for Programming Languages and Operating
+Systems, Volume 3, ser. ASPLOS 2023. New York, NY, USA:
+Association for Computing Machinery, 2023, p. 419–432. [Online].
+Available: https://doi.org/10.1145/3582016.3582038
+[41] Z. Yan, Z. Bai, T. Mitra, and W.-F. Wong, “Sparrowsnn: A hardware/software co-design for energy efficient ecg classification,” arXiv
+preprint arXiv:2406.06543, 2024.
+
+14
+
+[42] H. Lee, C. Kim, S. Lee, E. Baek, and J. Kim, “An accurate and
+fair evaluation methodology for snn-based inferencing with full-stack
+hardware design space explorations,” Neurocomputing, vol. 455, pp.
+125–138, 2021.
+[43] J.-J. Lee, W. Zhang, and P. Li, “Parallel time batching: Systolicarray acceleration of sparse spiking neural computation,” in 2022 IEEE
+International Symposium on High-Performance Computer Architecture
+(HPCA). IEEE, 2022, pp. 317–330.
+[44] R. Yin, Y. Kim, D. Wu, and P. Panda, “Loas: Fully temporalparallel dataflow for dual-sparse spiking neural networks,” in 2024 57th
+IEEE/ACM International Symposium on Microarchitecture (MICRO).
+IEEE, 2024, pp. 1107–1121.
+[45] X. Ding, X. Zhang, N. Ma, J. Han, G. Ding, and J. Sun, “Repvgg: Making vgg-style convnets great again,” in Proceedings of the IEEE/CVF
+conference on computer vision and pattern recognition, 2021, pp.
+13 733–13 742.
+[46] Z. Yan, J. Zhou, and W.-F. Wong, “Low latency conversion of artificial
+neural network models to rate-encoded spiking neural networks,” arXiv
+preprint arXiv:2211.08410, 2022.
+[47] M. Ge, J. Wang, B. Chen, Y. Zhong, H. Du, S. Chen, and Y. Kang,
+“Allspark: Workload orchestration for visual transformers on processing
+in-memory systems,” IEEE Transactions on Computers, vol. 74, no. 2,
+pp. 427–441, 2025.
+[48] Z. Yan, J. Zhou, and W.-F. Wong, “Near lossless transfer learning for
+spiking neural networks,” in Proceedings of the AAAI conference on
+artificial intelligence, vol. 35, no. 12, 2021, pp. 10 577–10 584.
+
+Zhanglu Yan received the BSc degree in Computer
+Science from Xi’an Jiaotong University in 2019,
+the MSc degree in Artificial Intelligence from the
+National University of Singapore (NUS) in 2020,
+and the PhD degree in Computer Science from NUS
+in 2024. He is currently a research fellow at NUS.
+His research focuses on neuromorphic computing
+and spiking neural networks.
+
+Zhenyu Bai is a Research Fellow in the Department
+of Computer Science, National University of Singapore. His research interests include spatial dataflow
+architectures design and compilation techniques.
+
+Kaiwen Tang Kaiwen Tang received the BSc degree
+in computer science from Xi’an Jiaotong University
+in 2022. She is working toward the PhD degree in
+the School of Computing, National University of
+Singapore. Her research focuses on spiking neural
+networks and efficient language models.
+
+Wong Weng-Fai received the BSc degree from the
+National University of Singapore, in 1988, and the
+DrEngSc degree from the University of Tsukuba,
+Japan, in 1993. He is currently an associate professor
+with the Department of Computer Science, National
+University of Singapore. His research interests include computer architecture, compilers, and highperformance computing. He is a senior member of
+the IEEE.
+
+

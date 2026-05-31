@@ -1,0 +1,636 @@
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+A Study on Brain Computing Interface
+Ms. Yogita Barse1, Dr. G. R. Hemalakshmi2, Dr. N.B Prakash3,
+Ms. Aarti Ahirwar4, Ms. Deepa Vyas5
+
+1Phd Scholar, School of Computing Science and Engineering VIT Bhopal.
+2
+
+Senior Assistant Professor, School of Computing Science and Engineering VIT Bhopal.
+
+3Senior Associate Professor, School of Computing Science and Engineering, VIT Bhopal.
+4Programmer, IPS Academy, Institute of Engineering and Science, Indore.
+
+5Assistant Professor, IPS Academy, Institute of Engineering and Science, Indore.
+
+Abstract. Brain computing, or neuromorphic computing, is a
+revolutionary field inspired by the human brain's parallel processing and
+energy efficiency. Unlike traditional computers that separate memory and
+processing, brain-inspired systems integrate these functions, enabling
+faster, more efficient data handling.The core of this technology is the use
+of artificial neural networks (ANNs) and specialized neuromorphic
+hardware. ANNs mimic the brain's structure, while hardware like spiking
+neural networks (SNNs) and memristors physically replicate the brain's
+synaptic behavior. These systems excel at tasks like pattern recognition
+and machine learning, where adaptability is key. However, the field faces
+significant challenges. Developing scalable hardware that matches the
+brain's complexity and creating effective software to train these systems
+are major hurdles. Additionally, we need a deeper understanding of the
+brain's own computational principles to unlock the full potential of this
+technology.Despite these challenges, brain computing is poised to
+transform various sectors, including artificial intelligence, robotics, and
+healthcare, by creating a new generation of cognitive systems that can
+learn and reason in a more human-like way.
+
+Keywords: Brain Computing, EEG, Neuromorphic Computing,spiking
+neural networks,Electrocorticography.
+
+1. Introduction
+The remarkable computational power and unparalleled energy efficiency of the human
+brain have long served as a profound source of inspiration for computer scientists and
+engineers. Unlike conventional computing systems based on the von Neumann architecture,
+which suffers from the "memory wall" bottleneck due to the physical separation of
+processing and memory units, the brain processes information in a massively parallel and
+integrated manner [1]. This fundamental difference has motivated the emergence of brain
+computing, a transformative field that seeks to emulate the brain's unique computational
+principles to overcome the limitations of traditional computing paradigms.[2].
+
+© The Authors, published by EDP Sciences. This is an open access article distributed under the terms of the Creative Commons
+Attribution License 4.0 (https://creativecommons.org/licenses/by/4.0/).
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+Brain computing, also referred to as neuromorphic computing, represents a significant
+departure from the binary logic of digital computers.At its core, it is about designing and
+building hardware and software systems that mimic the structure and function of biological
+neural networks. This includes the use of artificial neurons and synapses, which are the
+fundamental building blocks of the brain, to perform computations directly where data is
+stored. This approach promises to deliver unprecedented improvements in power
+efficiency, speed, and cognitive capabilities, particularly for tasks that the human brain
+excels at, such as pattern recognition, sensory data processing, and complex decisionmaking in real-world environments[3-4].
+This paper provides a comprehensive review of the current state of brain computing,
+exploring the key technologies, applications, and challenges that define the field. We begin
+by examining the core principles of neuromorphic hardware, including spiking neural
+networks (SNNs) and novel memory technologies like memristors, which are designed to
+replicate the brain's synaptic plasticity. We then delve into the diverse and impactful
+applications of brain computing, ranging from medical devices and assistive technologies
+for individuals with disabilities to advanced robotics and artificial intelligence systems.
+Furthermore, we discuss the significant technical and ethical challenges that must be
+addressed for the widespread adoption of this technology, including the need for new
+programming paradigms, the development of scalable hardware, and the critical issues
+surrounding privacy and security. By synthesizing current research and identifying future
+directions, this paper aims to provide a clear and insightful overview of how brain
+computing is poised to shape the future of computation and intelligence.[5].
+This paper include Literature Review, including summary , Classification of Brain
+Computing Interface, Phases of Brain Computing Interfaces., Neuromorphic Computing
+and Spiking Neural Networks (SNNs).
+
+2. Literature Review
+Table 1 showswork reviewed highlights major trends in Brain-Computer Interfaces
+(BCI),Neuromorphic Computing, and related data analysis. Several papers focus on the
+fundamental technology of BCI, particularly its applications and signal processing
+challenges. Mak and Wolpaw [6,7]. provide a detailed clinical perspective, reviewing the
+current state and future prospects of BCI for communication and rehabilitation, although
+their historical view may lack the depth of newer signal processing techniques.
+Complementing this, Abdulkader, Atia, et al. [8]. offer a general review focused on the
+overall applications, technological hurdles, and ethical roadblocks of BCI. From a practical
+standpoint, Zander and Kothe [9]. explore the concept of Passive BCI, which allows for
+seamless integration into human-machine systems by implicitly monitoring brain states like
+workload, though this approach suffers from complex data interpretation and a lower
+information transfer rate compared to active BCI systems. T. Al-ani and D. Tr [10]. address
+the computational core of BCI, providing an in-depth technical review of signal processing
+and classification methods, the very techniques essential for translating brain activity into
+control commands, but these methods are subject to rapid obsolescence.
+A separate but increasingly relevant research direction involves advanced hardware and
+computational models. Guo, Pan, Jiao, et al. [11]. address the hardware frontier by
+developing a versatile memristor for both memory and neuromorphic computing, promising
+
+2
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+hardware efficiency and in-memory computing despite challenges in scaling and device
+variability. Linking this hardware to applications, Bihui Yu et al. [12]. review the use of
+deep learning for brain-inspired computing applied specifically to Human-Computer
+Interaction (HCI). While this review offers a broad overview and guides future research, it
+lacks granular technical detail and can quickly become outdated. Finally, a specific article
+by Maiseli [13]. highlights the importance of Brain Informatics, providing cutting-edge
+research in computational neuroscience and brain data analysis, the foundation upon which
+both BCI and neuromorphic computing rely.
+Table 1. Summary of Literature review.
+Author
+Mak JN,
+Wolpaw JR.
+[6].
+
+Protocol
+Clinical
+Applications of
+BCI
+(Review/Prospects)
+
+Abdulkader,
+S. N., Atia,
+A., et al.
+[8].
+
+BCI Applications
+and Challenges
+(Review)
+
+Zander TO,
+Kothe C[9].
+
+Passive BCI
+application
+
+T. Al-ani
+and D.
+Tr[10].
+
+Signal Processing
+and Classification
+(Review)
+
+Guo, T.,
+Pan, K.,
+Jiao, Y., et
+al.[11].
+
+Versatile
+Memristor
+fabrication/design
+
+Description
+Reviews the
+current state and
+future outlook for
+the clinical use of
+BCI technology
+(e.g.,
+communication,
+rehabilitation).
+A general review
+of the current
+applications,
+technological
+hurdles, and
+ethical challenges
+associated with
+Brain-Computer
+Interfacing.
+Discusses applying
+BCI technology to
+general humanmachine systems
+by focusing on
+implicit/passive
+monitoring of
+brain states (e.g.,
+workload,
+attention).
+Reviews various
+methods for
+processing and
+classifying brain
+signals used in
+BCI, essential
+steps for
+translating brain
+activity into
+control commands.
+Focuses on
+developing a single
+memristor device
+with varied
+functionality for
+both memory and
+neuromorphic
+
+3
+
+Advantages
+Detailed focus
+on clinical
+relevance, longterm
+perspective on
+BCI adoption.
+Comprehensive
+look at realworld utility
+and systemic
+roadblocks.
+
+Limitations
+Limited technical
+depth on signal
+processing, historical
+view (some
+technologies may
+have advanced
+significantly since
+2009).
+Focuses on challenges
+(may not detail
+specific solutions),
+general nature (lacks
+deep technical focus).
+
+Seamless
+integration with
+existing
+systems, does
+not require
+conscious user
+control/training.
+
+Interpretation
+difficulty (brain states
+are complex), lower
+information transfer
+rate than active BCIs.
+
+In-depth
+technical focus
+on the
+computational
+heart of BCI.
+
+Focuses on methods
+rather than
+applications/hardware,
+the techniques can
+become quickly
+outdated.
+
+Hardware
+efficiency,
+versatility,
+potential for inmemory
+computing.
+
+The drawbacks are
+complex
+development, scaling
+difficulties, and
+variable device
+characteristics.
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+Bihui Yu et
+al.[12].
+
+Deep Learning
+based Braininspired
+Computing
+
+Maiseli,
+B.[13].
+
+Brain Informatics
+
+https://doi.org/10.1051/epjconf/202534101016
+
+computing.
+A review on using
+deep learning
+techniques for
+brain-inspired
+computing,
+specifically
+applied to HumanComputer
+Interaction (HCI).
+A specific article
+from the journal
+Brain Informatics
+(DOI provided)
+focused on the
+broader field of
+computational
+neuroscience and
+brain data analysis.
+
+Provides a
+broad overview
+of the field,
+guides future
+research
+directions in
+HCI.
+
+The review provides a
+high-level overview
+but omits detailed
+technical information
+and may lose
+relevance as the field
+rapidly progresses.
+
+Provides
+cutting-edge
+research in
+brain data
+analysis and
+computational
+modeling.
+
+Include general topic
+only.
+
+BCI: Brain-Computer Interface (BCI)Fig. 1 shows it is a technology that enables
+communication between the human brain and computers by utilizing brain activity. This
+activity is most commonly measured using electroencephalography (EEG), a physiological
+method in which electrodes are placed on the scalp surface to record brain signals.[14]. A
+Brain-Computer Interface (BCI), also known as a brain–machine interface, enables direct
+communication between the brain and external devices such as computers or robotic limbs.
+Yike Sun [14–15]. Unlike traditional communication pathways that rely on vision,
+movement, or speech, BCI bypasses these channels by directly linking the brain’s electrical
+activity with the external world. This connection enhances human interaction with the
+physical environment [16]. BCI serves as a non-muscular communication channel, allowing
+the acquisition, processing, analysis, and translation of brain signals into commands that
+can control external devices or applications.
+
+Fig. 1. Brain Computer Interface
+
+4
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+2.1 BCI: Classification
+2.1.1 Invasive:
+An invasive Brain-Computer Interface (BCI) requires the surgical implantation of
+electrodes into the brain tissue or onto its surface to capture neural activity, providing highquality signals. These BCIs are mainly intended for individuals with severe disabilities to
+restore movement or communication abilities but come with higher risks, such as tissue
+damage and infection. Examples include electrocorticography (ECoG) arrays and
+intracortical microelectrode arrays[17].
+Electrocorticography (ECoG):
+Eectroencephalography as shown in Fig.2 is a types of monitoring that uses electrodes
+placed directly on the brain’s exposed surface to recordelectrical activity ofcerebral cortex.
+Whereas, a conventional electroencephalography (EEG) electrodes monitor activityfrom
+outside the skull. ECoGcan be performed during the surgery in operating room
+(intraoperative ECoG) or outside of surgery(extraoperativeECoG). Because a surgical
+incision into the skull (craniotomy) is required toimplant the electrode grid, ECoG is an
+invasive procedure[18].
+
+Fig. 2 Intracranial electrode grid for electrocorticography.
+
+2.1.2 Partially invasive:
+Partially invasive brain-computer interfaces (BCIs) implant electrodes under the skull but
+not directly into the brain. This approach, exemplified by electrocorticography (ECoG),
+offers a balance between the high signal quality of invasive BCIs and the lower risk of noninvasive ones. Applications include neurorehabilitation and seizure prediction[19].
+2.1.3 Non-invasive:
+A non-invasive brain-computer interface (BCI) lets you control devices using brain signals
+without surgery. It typically uses electroencephalography (EEG), which records electrical
+activity via sensors placed on the scalp. Non-invasive BCIs are safe, affordable, and
+accessible, but they offer lower signal accuracy compared to invasive methods [19].
+EEG-Electroencephalography (EEG):
+Electroencephalography is a method to record an electrogram of the impulsive electrical
+activity of the brain. These signals as shown in Fig. 3 are detected by EEG which represents
+
+5
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+the postsynaptic potentials of pyramidal neurons in the neocortex and allocortex. which is
+known as non-invasive. EEGelectrodes are placed along the scalp called "scalp EEG"
+using the International [20].system, or variations of it.Electrocorticography,
+involvesplacement of electrodes surgically, known as "intracranial EEG". Clinical
+interpretation of EEG recordings is performed by visual inspection of the tracing or
+quantitative EEG analysis[21].
+
+Fig. 3 Epileptic spike and wave discharges monitored EEG
+
+3 Phases of BCI:
+
+A Brain-Computer Interface (BCI) is an AI framework that identifies particular patterns in
+brain signals by progressing through five main stages as shown in Fig.4: signal acquisition,
+preprocessing or enhancement, feature extraction, classification, and control interface[22].
+
+Fig 4.General Structure of brain computer interface.
+
+
+
+3.1 Signal acquisition: The signal acquisition stage captures brain signals and may also
+involve noise reduction and artifact removal. Signal acquisition techniques are
+classified into three main categories as shown in Fig. 5, as outlined below[23].
+
+6
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+Fig 5.Three different methods for electrical activity of brain recordings.
+
+3.2 Preprocessing: Signal processing in Brain-Computer Interfaces (BCIs) is a crucial
+step that converts raw brain signals into meaningful and usable information. To ensure
+signal clarity, quality, and reliability, this process involves multiple stages, including
+preprocessing, feature extraction, and classification [24]. The first stage, preprocessing,
+focuses on preparing the raw signals for further analysis by removing noise and
+external interferences that may distort or weaken the data. Various filtering techniques
+are applied, such as low-pass filters to remove high-frequency noise, high-pass filters
+to eliminate low-frequency drift, and band-pass filters that allow only signals within a
+specific frequency range to pass through. In addition, advanced methods like
+Independent Component Analysis (ICA) are also used to separate and clean the signals
+more effectively.
+3.3 Feature Extraction: Feature extraction involves identifying and isolating distinctive
+characteristics from the received signal. These features must closely reflect the user’s
+intent, since much of the meaningful brain activity tends to be either transient or
+oscillatory in nature[25].
+3.4 Feature Translation: Once the features are extracted and classified, they are
+processed through the feature translation algorithm. The primary role of this algorithm
+is to transform the received signals into suitable commands that can be executed by the
+output device[26].
+3.5 Device Output: The output generated by the feature translation unit is delivered to
+the designated device. These translated commands control external systems, enabling
+functions such as letter selection, cursor movement, robotic arm manipulation, and
+more. The resulting device actions provide feedback to the user, thereby completing
+the control loop[27].
+
+4 Neuromorphic Computing
+Neuromorphic computing technologies, such as spiking neural networks (SNNs), replicate
+brain-inspired neuron models and carry out computation through discrete spikes (Maass,
+1997). Neuromorphic Computing replicate neural systems by constructing interconnected
+
+7
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+networks of artificial neurons, which serve as processing units, and synapses, which
+function as connectivity elements. These components emulate the interactions and
+behaviors of biological neurons. Information is processed through the activation and
+propagation of spikes, enabling efficient parallel computation[28].
+
+5 Spiking Neural Networks (SNNs)
+Spiking Neural Networks (SNNs) are a core component of neuromorphic computing. They
+function based on discrete neural events known as spikes or action potentials. This eventdriven approach allows for efficient computation, contrasting with the continuous
+processing found in traditional computing[29].
+
+6 Conclusion
+The field of Brain-Computer Interfaces (BCIs) has evolved from a theoretical idea into a
+practical technology with significant clinical and social impacts. This progress is due to
+major advancementsin both invasive and non-invasive techniques, supported by
+improvements in signal processing and machine learning. Despite ongoing challenges, such
+as the need to make non-invasive systems more reliable and user-friendly, current research
+and development hold great promise for revolutionizing human-computer interaction,
+neurorehabilitation, and restoring functions for people with disabilities.The future scope of
+Brain Computer Interface (BCI) is vast and transformative pushing beyond current
+limitations in clinical and consumer applications. Development is largely focused on three
+interconnected areas: enhanced hardware, smarter algorithm, and widespread integration.
+
+References
+1.
+2.
+
+3.
+
+4.
+
+5.
+
+6.
+
+D. V. Christensen et al., “2022 roadmap on neuromorphic computing and
+engineering,” Neuromorphic Comput. Eng., vol. 2, no. 2, p. 022501, 2022.
+G. Edlinger, C. Rizzo, and C. Guger, “Brain Computer Interface,” in Springer
+Handbook of Medical Technology, Berlin, Heidelberg: Springer Berlin
+Heidelberg, 2011, pp. 1003–1017
+Wolpaw JR, Birbaumer N, Heetderks WJ, McFarland DJ, Peckham PH, Schalk G,
+Donchin E, Quatrano LA, Robinson CJ, Vaughan TM et al (2000) Brain-computer
+interface technology: a review of the first international meeting. IEEE Trans
+RehabilEng 8:164–173.
+S. K. Mudgal, S. K. Sharma, J. Chaturvedi, and A. Sharma, “Brain computer
+interface advancement in neurosciences: Applications and issues,” Interdiscip.
+Neurosurg., vol. 20, no. 100694, p. 100694, 2020.
+Baraka Maiseli, A. T. Abdalla, and L. V. Massawe, “Mercy Mbise, Khadija
+Mkocha1, Nassor Ally Nassor, Moses Ismail, James Michael and
+SamwelKimambo” Brain-computer interface: trend, challenges, and threats 2023,”
+vol. 10.
+Vaid S, Singh P, Kaur C. EEG signal analysis for BCI interface: A review. In:
+International Conference on Advanced Computing and Communication
+Technologies, ACCT. Institute of Electrical and Electronics Engineers Inc., 2015,
+pp. 143–147.
+
+8
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+7.
+
+Mak JN, Wolpaw JR. Clinical Applications of Brain-Computer Interfaces: Current
+State and Future Prospects. IEEE Rev Biomed Eng. 2009;2:187-199. doi:
+10.1109/RBME.2009.2035356. PMID: 20442804; PMCID: PMC2862632.
+8. Sarah N. Abdulkader, Ayman Atia, Mostafa-Sami M. Mostafa, Brain computer
+interfacing: Applications and challenges, Egyptian Informatics Journal, Volume
+16,
+Issue
+2,2015,Pages
+213-230,
+ISSN
+1110-8665,
+https://doi.org/10.1016/j.eij.2015.06.002.
+9. Zander TO, Kothe C (2011) Towards passive brain-computer interfaces: applying
+brain-computer interface technology to human-machine systems in general. J
+Neural Eng 8:025005.
+10. T. Al-ani and D. Tr, ‘Signal Processing and Classification Approaches for BrainComputer Interface’, Intelligent and Biosensors. InTech, Jan. 01, 2010. doi:
+10.5772/7032
+11. Guo, T., Pan, K., Jiao, Y., et al. (2022). Versatile memristor for memory and
+neuromorphic computing.
+12. Bihui Yu, Sibo Zhang, Lili Zhou, Jingxuan Wei, Linzhuang Sun, Liping Bu,
+“Brain-inspired computing based on deep learning for human-computer
+interaction: A review,Neurocomputing,Volume 650,2025,130928,ISSN 09252312,https://doi.org/10.1016/j.neucom.2025.130928.
+13. Maiseli, B., Abdalla, A.T., Massawe, L.V. et al. Brain–computer interface: trend,
+challenges, and threats. Brain Inf. 10, 20 (2023). https://doi.org/10.1186/s40708023-00199-3
+14. Yike Sun, Xiaogang Chen, Bingchuan Liu, Liyan Liang, Yijun Wang, Shangkai
+Gao, Xiaorong Gao, Signal acquisition of brain–computer interfaces: A medicalengineering crossover perspective review, Fundamental Research, Volume 5,
+Issue
+1,
+2025,
+Pages
+3-16,
+ISSN
+26673258,https://doi.org/10.1016/j.fmre.2024.04.011.
+15. Bihui Yu, Sibo Zhang, Lili Zhou, Jingxuan Wei, Linzhuang Sun, Liping Bu,
+“Brain-inspired computing based on deep learning for human-computer
+interaction: A review,Neurocomputing,Volume 650,2025,130928,ISSN 09252312,https://doi.org/10.1016/j.neucom.2025.130928.
+16. Yang, Yikai & Eshraghian, Jason & Truong, Nhan & Nikpour, Armin & Kavehei,
+Omid. (2023). Neuromorphic deep spiking neural networks for seizure detection.
+Neuromorphic Computing and Engineering. 3. 10.1088/2634-4386/acbab8.
+17. Li, Y., Zeng, S., & Hao, J. (2019). Non-invasive optical guided tumor
+metastasis/vessel imaging by using lanthanide nanoprobe with enhanced downshifting emission beyond 1500 nm. ACS nano, 13(1), 248-259
+18. Salahuddin U, Gao PX. Signal Generation, Acquisition, and Processing in Brain
+Machine Interfaces: A Unified Review. Front Neurosci. 2021 Sep 13;15:728178.
+doi: 10.3389/fnins.2021.728178. PMID: 34588951; PMCID: PMC8475516
+19. Chih-Hung Wang, Chu-Lin Tsai, Hua Li, Chin-Hua Su, Tou-Yuan Tsai, Joyce
+Tay, Cheng-Yi Wu, Meng-Che Wu, Maximilian H.T. Schmieschek, Oezguer A.
+Onur, Chien-Chang Lee, Chien-Hua Huang, Comparison of neuroprognostic
+performance between manually and automatically computed gray-white matter
+ratios on brain computed tomography following cardiac arrest: A systematic
+
+9
+
+EPJ Web of Conferences 341, 01016 (2025)
+ICATCICT 2025
+
+https://doi.org/10.1051/epjconf/202534101016
+
+review and meta-analysis, NeuroImage,Volume 316,2025,121298, ISSN 10538119, https://doi.org/10.1016/j.neuroimage.2025.121298.
+20. Xiao Sun, Zhipeng Xia, Tianyu Wang, Boyan Jin, Jialin Meng, Resistive random
+access memory based artificial neural network for brain-inspired neuromorphic
+computing,Materials Today,Volume 88,2025,Pages 567-584,ISSN 13697021,https://doi.org/10.1016/j.mattod.2025.06.002.
+21. Sewell L, Abbas A, Kane N. Introduction to interpretation of the EEG in
+intensive
+care.
+BJA
+Educ.
+2019
+Mar;19(3):74-82.
+doi:
+10.1016/j.bjae.2018.11.002. Epub 2018 Dec 17. PMID: 33456874; PMCID:
+PMC7808102.
+22. Wireko Andrew Awuah, Arjun Ahluwalia, Kwadwo Darko, Vivek Sanker,
+Joecelyn Kirani Tan, Pearl Ohenewaa Tenkorang, Adam Ben-Jaafar, Sruthi
+Ranganathan, Nicholas Aderinto, Aashna Mehta, Muhammad Hamza Shah, Kevin
+Lee Boon Chun, Toufik Abdul-Rahman, Oday Atallah, Bridging Minds and
+Machines: The Recent Advances of Brain-Computer Interfaces in Neurological
+and Neurosurgical Applications, World Neurosurgery, Volume 189, 2024, Pages
+138-153, ISSN 1878-8750, https://doi.org/10.1016/j.wneu.2024.05.104.
+23. Lazarou I, Nikolopoulos S, Petrantonakis PC, Kompatsiaris I, Tsolaki M. EEGbased braincomputer interfaces for communication and rehabilitation of people
+with motor impairment: a novel Approach of the 21 st century. Front
+HumNeurosci. 2018;12:14.
+24. T. Al-ani and D. Tr, ‘Signal Processing and Classification Approaches for BrainComputer Interface’, Intelligent and Biosensors. InTech, Jan. 01, 2010. doi:
+10.5772/7032.
+25. Park SA, Hwang HJ, Lim JH, Choi JH, Jung HK, Im CH. Evaluation of feature
+extraction methods for EEG-based brain-computer interfaces in terms of
+robustness to slight changes in electrode locations. Med Biol Eng Comput. 2013
+May;51(5):571-9. doi: 10.1007/s11517-012-1026-1. Epub 2013 Jan 17. PMID:
+23325145.
+26. Mak JN, Wolpaw JR. Clinical Applications of Brain-Computer Interfaces:
+Current State and Future Prospects. IEEE Rev Biomed Eng.2009;2:187-199. doi:
+10.1109/RBME.2009.2035356. PMID: 20442804; PMCID: PMC2862632.
+27. Chaudhary U, Birbaumer N, RamosMurguialday A. Brainecomputer interfaces for
+communication and rehabilitation. Nat Rev Neurol. 2016;12:513-525.
+28. Z. Yu, A. M. Abdulghani, A. Zahid, H. Heidari, M. A. Imran and Q. H. Abbasi,
+"An Overview of Neuromorphic Computing for Artificial Intelligence Enabled
+Hardware-Based Hopfield Neural Network," in IEEE Access, vol. 8, pp. 6708567099, 2020, doi:
+29. Jiadong Wu, Yinan Wang, Zhiwei Li, Lun Lu, Qingjiang Li, A Review of
+Computing with Spiking Neural Networks, Computers, Materials and Continua,
+Volume 78, Issue 3, 2024, Pages 2909-2939, ISSN 1546-2218,
+https://doi.org/10.32604/cmc.2024.047240.
+
+10
+
+
