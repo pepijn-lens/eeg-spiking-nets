@@ -1,2 +1,8 @@
 data/
 .venv/
+.claude/
+blog/
+figures/
+papers/
+ASSIGNMENT.md
+REPRODUCE.md
