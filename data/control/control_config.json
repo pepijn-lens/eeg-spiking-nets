@@ -1,0 +1,62 @@
+{
+  "n_trials": 288,
+  "n_channels": 20,
+  "fs": 133.33333333333334,
+  "S": 20,
+  "T": 20,
+  "mu_band": [
+    8.0,
+    13.0
+  ],
+  "beta_band": [
+    14.0,
+    30.0
+  ],
+  "mod_window": [
+    0.5,
+    2.5
+  ],
+  "modulation_depth": 0.7,
+  "noise_level": 1.0,
+  "seed": 42,
+  "channel_names": [
+    "FC3",
+    "FC1",
+    "FCz",
+    "FC2",
+    "FC4",
+    "C5",
+    "C3",
+    "C1",
+    "Cz",
+    "C2",
+    "C4",
+    "C6",
+    "CP3",
+    "CP1",
+    "CPz",
+    "CP2",
+    "CP4",
+    "P1",
+    "Pz",
+    "P2"
+  ],
+  "left_modulated": [
+    4,
+    3,
+    11,
+    10,
+    9,
+    16,
+    15
+  ],
+  "right_modulated": [
+    0,
+    1,
+    5,
+    6,
+    7,
+    12,
+    13
+  ]
+}

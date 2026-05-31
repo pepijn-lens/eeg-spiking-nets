@@ -137,3 +137,5 @@ python3 -m venv .venv && .venv/bin/pip install numpy scipy matplotlib
 .venv/bin/python src/generate.py --variant stress
 .venv/bin/python src/make_figures.py
 ```
+
+The code that supports data generation and experiments is available [here](https://github.com/pepijn-lens/eeg-spiking-nets).
