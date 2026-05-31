@@ -52,7 +52,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ### Figure (a): Raw multichannel traces
 
-![Raw traces](../figures/fig_a_traces.png)
+![Raw traces](figures/fig_a_traces.png)
 
 **Figure (a).** Raw amplitude traces (arbitrary units) for six electrode pairs (left/right hemisphere, frontal–central–parietal rows) for one left-class trial (blue) and one right-class trial (red). The gold band marks the ERD modulation window (0.5–2.5 s). The contralateral suppression is not visible by eye in the raw signal — it lives in the mu/beta frequency bands — confirming that band-power analysis (Figures b and c) is required to reveal the class structure.
 
@@ -60,7 +60,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ### Figure (b): Time-frequency spectrogram
 
-![Spectrogram](../figures/fig_b_spectrogram.png)
+![Spectrogram](figures/fig_b_spectrogram.png)
 
 **Figure (b).** Mean log-power spectrogram at electrode C4, averaged over all 144 left-class trials (left panel) and all 144 right-class trials (right panel). The frequency axis is clipped to 5–40 Hz to prevent the dominant 1/f low-frequency power from compressing the colour scale. Cyan and magenta bands mark the mu (8–13 Hz) and beta (14–30 Hz) ranges; dashed white lines bound the 0.5–2.5 s ERD window. C4 sits in the contralateral hemisphere for left-hand imagery: the left-class panel shows clear power suppression in both bands during the window (dark region), while the right-class panel shows no such suppression — confirming that the planted ERD is visible in the time-frequency domain.
 
@@ -68,7 +68,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ### Figure (c): Class-mean band-power per channel
 
-![Band power](../figures/fig_c_bandpower.png)
+![Band power](figures/fig_c_bandpower.png)
 
 **Figure (c).** Left panel: mean mu+beta RMS band power per electrode for the left-class (blue) and right-class (red) trials. Right panel: difference (class 0 − class 1); blue bars mark electrodes suppressed in the left-class trial (right hemisphere), red bars mark electrodes suppressed in the right-class trial (left hemisphere). The pattern mirrors contralateral ERD in real motor-imagery EEG: the hemisphere opposite to the imagined hand shows the greatest power reduction, while the ipsilateral hemisphere is unaffected. This confirms the dataset encodes class identity solely and precisely as a lateralised band-power modulation.
 
@@ -76,7 +76,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ## Generation procedure
 
-The generator ([`src/generate.py`](../src/generate.py)) follows four steps per trial:
+The generator ([`src/generate.py`](src/generate.py)) follows four steps per trial:
 
 1. **Base signal.** Each channel gets an independent 1/f (pink) noise signal of length D=400, scaled by `noise_level`. Pink noise is chosen because real EEG has a 1/f power spectrum, so the background statistics are physically plausible.
 
@@ -125,10 +125,10 @@ The dataset is designed so that **the only discriminative signal is band-power l
 
 ## Data and code
 
-- **Generator:** [`src/generate.py`](../src/generate.py)
-- **Figure generator:** [`src/make_figures.py`](../src/make_figures.py)
-- **Control dataset:** [`data/control/`](../data/control/) — `control_trials.npy` (288×20×20×20, float32), `control_labels.npy`, `control_config.json`
-- **Stress dataset:** [`data/stress/`](../data/stress/) — same structure, weak modulation
+- **Generator:** [`src/generate.py`](src/generate.py)
+- **Figure generator:** [`src/make_figures.py`](src/make_figures.py)
+- **Control dataset:** [`data/control/`](data/control/) — `control_trials.npy` (288×20×20×20, float32), `control_labels.npy`, `control_config.json`
+- **Stress dataset:** [`data/stress/`](data/stress/) — same structure, weak modulation
 
 Reproduce from scratch:
 ```bash
