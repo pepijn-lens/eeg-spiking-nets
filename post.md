@@ -4,7 +4,7 @@
 
 Spiking Neural Networks (SNNs) classify motor-imagery EEG by processing data through two distinct stages: a **learnable spike encoder** that converts real-valued EEG samples into binary spike trains, followed by **spiking classifier layers** that integrate those spikes to produce a class label. The NiSNN-A model of Zhang et al. ([arXiv:2312.05643](https://arxiv.org/abs/2312.05643)) is a recent representative: its first Conv2d layer (kernel 1×5) acts as the spike encoder, its second Conv2d layer (kernel 10×10) acts as the classifier, and its Non-iterative LIF (NiLIF) neurons replace the standard iterative LIF to avoid vanishing gradients over long time sequences.
 
-A standing question in this design is: **where does the discriminative work actually happen?** If the spike encoder already captures the class-relevant structure in its output spike trains, the downstream spiking layers add little more than a linear readout. If, on the other hand, the spiking layers are essential, disabling them should collapse accuracy. A real EEG benchmark cannot cleanly answer this because real EEG contains many confounders — session noise, artefacts, subject variability — that make it impossible to attribute an accuracy drop to a single architectural component. A controlled synthetic dataset removes those confounders.
+A standing question in this design is: **where does the discriminative work actually happen?** If the spike encoder already captures the class-relevant structure in its output spike trains, the downstream spiking layers add little more than a linear readout. If, on the other hand, the spiking layers are essential, disabling them should collapse accuracy. A real EEG benchmark cannot cleanly answer this because real EEG contains many confounders (session noise, artefacts, subject variability) that make it impossible to attribute an accuracy drop to a single architectural component. A controlled synthetic dataset removes those confounders.
 
 The hypothesis under test is: **a synthetic signal that encodes class identity only as mu/beta band-power modulation (an ERD analogue) can be decoded by the learnable spike encoder alone.** This page describes the dataset built to enable that test.
 
@@ -25,7 +25,7 @@ Each trial is a tensor of shape **(C=20, S=20, T=20)**, matching the NiSNN-A inp
 | Axis | Size | Meaning |
 |------|------|---------|
 | C | 20 | EEG channels (same electrode set as BCIC IV 2a) |
-| S | 20 | Timepieces — coarse temporal segments |
+| S | 20 | Timepieces: coarse temporal segments |
 | T | 20 | Time steps within each timepiece |
 
 The flat time dimension D = S × T = 400 samples at an effective sampling rate of ~133 Hz (400 steps per 3-second trial, matching the NiSNN-A downsampling from 250 Hz).
@@ -54,7 +54,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ![Raw traces](figures/fig_a_traces.png)
 
-**Figure (a).** Raw amplitude traces (arbitrary units) for six electrode pairs (left/right hemisphere, frontal–central–parietal rows) for one left-class trial (blue) and one right-class trial (red). The gold band marks the ERD modulation window (0.5–2.5 s). The contralateral suppression is not visible by eye in the raw signal — it lives in the mu/beta frequency bands — confirming that band-power analysis (Figures b and c) is required to reveal the class structure.
+**Figure (a).** Raw amplitude traces (arbitrary units) for six electrode pairs (left/right hemisphere, frontal–central–parietal rows) for one left-class trial (blue) and one right-class trial (red). The gold band marks the ERD modulation window (0.5–2.5 s). The contralateral suppression is not visible by eye in the raw signal (it lives in the mu/beta frequency bands), confirming that band-power analysis (Figures b and c) is required to reveal the class structure.
 
 ---
 
@@ -62,7 +62,7 @@ Two dataset variants are provided to support the ablation experiments described 
 
 ![Spectrogram](figures/fig_b_spectrogram.png)
 
-**Figure (b).** Mean log-power spectrogram at electrode C4, averaged over all 144 left-class trials (left panel) and all 144 right-class trials (right panel). The frequency axis is clipped to 5–40 Hz to prevent the dominant 1/f low-frequency power from compressing the colour scale. Cyan and magenta bands mark the mu (8–13 Hz) and beta (14–30 Hz) ranges; dashed white lines bound the 0.5–2.5 s ERD window. C4 sits in the contralateral hemisphere for left-hand imagery: the left-class panel shows clear power suppression in both bands during the window (dark region), while the right-class panel shows no such suppression — confirming that the planted ERD is visible in the time-frequency domain.
+**Figure (b).** Mean log-power spectrogram at electrode C4, averaged over all 144 left-class trials (left panel) and all 144 right-class trials (right panel). The frequency axis is clipped to 5–40 Hz to prevent the dominant 1/f low-frequency power from compressing the colour scale. Cyan and magenta bands mark the mu (8–13 Hz) and beta (14–30 Hz) ranges; dashed white lines bound the 0.5–2.5 s ERD window. C4 sits in the contralateral hemisphere for left-hand imagery: the left-class panel shows clear power suppression in both bands during the window (dark region), while the right-class panel shows no such suppression, confirming that the planted ERD is visible in the time-frequency domain.
 
 ---
 
@@ -114,12 +114,12 @@ The dataset enables four controlled experiments:
 
 | Experiment | Question | How the dataset supports it |
 |------------|----------|----------------------------|
-| **c1** | Is the toy dataset a fair MI-decoding regime? | The control variant plants a clear contralateral ERD pattern (Figure c shows ~37% band-power drop in the modulated channels). If the full NiSNN-A model does not exceed chance on this variant, the dataset is too hard — not the model. The stress variant sets the lower bound where any model should struggle. |
+| **c1** | Is the toy dataset a fair MI-decoding regime? | The control variant plants a clear contralateral ERD pattern (Figure c shows ~37% band-power drop in the modulated channels). If the full NiSNN-A model does not exceed chance on this variant, the dataset is too hard, not the model. The stress variant sets the lower bound where any model should struggle. |
 | **c2** | What is the full-model accuracy ceiling? | Run NiSNN-A as published on the control variant. This is the reference accuracy all ablations are measured against. |
-| **c3** | Do the spiking classifier layers contribute? | Replace the second Conv2d+NiLIF block with a fixed random projection or remove it entirely, then re-evaluate on the control variant. If accuracy is preserved, the class information was fully captured by the spike encoder; if accuracy drops, the classifier layers were necessary. **Interpretive caveat:** NiSNN-A's encoder kernel spans 5 steps ≈ 37.5 ms, which is shorter than one full mu cycle (77–125 ms). If the encoder-only ablation fails, it is necessary to test whether a longer-kernel encoder variant also fails before concluding that the classifier layers are architecturally essential — a too-short kernel would confound the result. |
+| **c3** | Do the spiking classifier layers contribute? | Replace the second Conv2d+NiLIF block with a fixed random projection or remove it entirely, then re-evaluate on the control variant. If accuracy is preserved, the class information was fully captured by the spike encoder; if accuracy drops, the classifier layers were necessary. **Interpretive caveat:** NiSNN-A's encoder kernel spans 5 steps ≈ 37.5 ms, which is shorter than one full mu cycle (77–125 ms). If the encoder-only ablation fails, it is necessary to test whether a longer-kernel encoder variant also fails before concluding that the classifier layers are architecturally essential; a too-short kernel would confound the result. |
 | **c4** | How much does the learnable encoder matter? | Swap the learned spike encoder (first Conv2d+NiLIF, kernel 1×5) for a fixed threshold encoder (e.g. simple rate coding). If accuracy drops significantly, the learnable encoder was doing the discriminative work; if it does not, fixed encoding suffices for this ERD-only signal. |
 
-The dataset is designed so that **the only discriminative signal is band-power lateralisation** — precisely what the spike encoder should detect if the hypothesis holds. Experiments c3 and c4 can therefore produce a clean, causally interpretable answer.
+The dataset is designed so that **the only discriminative signal is band-power lateralisation**, precisely what the spike encoder should detect if the hypothesis holds. Experiments c3 and c4 can therefore produce a clean, causally interpretable answer.
 
 ---
 
@@ -127,8 +127,8 @@ The dataset is designed so that **the only discriminative signal is band-power l
 
 - **Generator:** [`src/generate.py`](src/generate.py)
 - **Figure generator:** [`src/make_figures.py`](src/make_figures.py)
-- **Control dataset:** [`data/control/`](data/control/) — `control_trials.npy` (288×20×20×20, float32), `control_labels.npy`, `control_config.json`
-- **Stress dataset:** [`data/stress/`](data/stress/) — same structure, weak modulation
+- **Control dataset:** [`data/control/`](data/control/): `control_trials.npy` (288×20×20×20, float32), `control_labels.npy`, `control_config.json`
+- **Stress dataset:** [`data/stress/`](data/stress/): same structure, weak modulation
 
 Reproduce from scratch:
 ```bash

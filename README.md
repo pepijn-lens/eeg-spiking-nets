@@ -1,6 +1,6 @@
 # Synthetic ERD Control Dataset for SNN Motor-Imagery Classification
 
-Tests the hypothesis: *in NiSNN-A, class identity encoded only as mu/beta band-power modulation can be decoded by the spike encoder alone — the downstream spiking classifier layers do not contribute discriminative work.*
+Tests the hypothesis: *in NiSNN-A, class identity encoded only as mu/beta band-power modulation can be decoded by the spike encoder alone; the downstream spiking classifier layers do not contribute discriminative work.*
 
 ## Background
 
@@ -12,8 +12,8 @@ See [post.md](post.md) for the full write-up including ERD physiology, dataset d
 
 ```
 data/
-  control/   # 288 trials, 70% ERD modulation — clear signal
-  stress/    # 288 trials, 15% ERD modulation — weak signal
+  control/   # 288 trials, 70% ERD modulation: clear signal
+  stress/    # 288 trials, 15% ERD modulation: weak signal
 figures/     # fig_a (traces), fig_b (spectrogram), fig_c (band power)
 src/
   generate.py      # synthetic ERD dataset generator
@@ -46,17 +46,17 @@ Four ablation conditions on control (70% ERD) and stress (15% ERD) datasets, 5-f
 | c1/c2 | Full NiSNN-A | **64.2% ± 2.8%** | 63.2% ± 2.8% |
 | c3 | EncoderOnly (no classifier) | **63.2% ± 2.2%** | 61.5% ± 1.4% |
 | c4 | FixedEncoder (sign threshold) | 57.3% ± 4.2% | 54.5% ± 5.0% |
-| — | Chance baseline | 50% | 50% |
+| - | Chance baseline | 50% | 50% |
 
-**c3 result**: encoder-only matches the full model within 1pp on both datasets. The spiking classifier layers add nothing — the spike encoder captures all discriminative information. This supports the hypothesis.
+**c3 result**: encoder-only matches the full model within 1pp on both datasets. The spiking classifier layers add nothing; the spike encoder captures all discriminative information. This supports the hypothesis.
 
 **c4 result**: replacing the learned encoder with a fixed sign threshold drops accuracy by 7pp, confirming the *learned* encoder contributes, but the gap is modest.
 
-**Accuracy ceiling (64%)**: lower than the 85–95% achievable with band-power features (logistic regression: 100%). The bottleneck is the encoder's 1×5 kernel, which spans ~37.5 ms — shorter than one mu-band cycle (77–125 ms). The NiLIF's temporal integration partially compensates but cannot fully resolve sub-Nyquist mu oscillations.
+**Accuracy ceiling (64%)**: lower than the 85–95% achievable with band-power features (logistic regression: 100%). The bottleneck is the encoder's 1×5 kernel, which spans ~37.5 ms, shorter than one mu-band cycle (77–125 ms). The NiLIF's temporal integration partially compensates but cannot fully resolve sub-Nyquist mu oscillations.
 
 ## Implementation notes
 
 Two deviations from the NiSNN-A paper were required to achieve stable training:
 
-1. **BatchNorm before each NiLIF** — without it, leaky accumulation drives membrane potentials far above the surrogate-gradient window and gradients vanish.
-2. **Straight-through estimator for the inner spike** — the paper's two-surrogate formulation compounds gradient sparsity (~5% of neurons active); replacing the inner surrogate with STE recovers gradient flow.
+1. **BatchNorm before each NiLIF**: without it, leaky accumulation drives membrane potentials far above the surrogate-gradient window and gradients vanish.
+2. **Straight-through estimator for the inner spike**: the paper's two-surrogate formulation compounds gradient sparsity (~5% of neurons active); replacing the inner surrogate with STE recovers gradient flow.
