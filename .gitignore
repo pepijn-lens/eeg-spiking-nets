@@ -2,3 +2,6 @@
 .claude/
 papers/
 post.pdf
+data/
+CLAUDE.md
+*__pycache__/
