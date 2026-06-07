@@ -123,19 +123,56 @@ The dataset is designed so that **the only discriminative signal is band-power l
 
 ---
 
+## Dataset-size sweep
+
+A second ablation studies how the above results change as the number of training trials varies from 72 to 1152 — a 16× range. The same three model variants (full, encoder-only, fixed-encoder) are trained with 5-fold CV at each size on both signal conditions.
+
+### Figure (d): Accuracy vs. dataset size
+
+![Sweep results](figures/fig_sweep.png)
+
+**Figure (d).** Mean accuracy (±1 std, 5-fold CV) vs. dataset size on the log₂ scale for all three ablation variants. Left panel: control (70% ERD). Right panel: stress (15% ERD). Dashed grey line marks the 50% chance baseline.
+
+### Findings
+
+**Small-N apparent accuracy is an artefact.** At N=72 the test fold contains only ~15 trials, inflating fold variance to ±6–12 pp and driving apparent mean accuracy to 68–75%. By N=288–576, test sets are large enough (~58–115 trials) to give stable estimates; accuracy settles in the 54–62% range.
+
+**The hypothesis holds at every scale.** Encoder-only matches or slightly exceeds full NiSNN-A at all five dataset sizes. No amount of additional training data causes the spiking classifier layers to gain an advantage; the discriminative work is done entirely in the spike encoder.
+
+**Fixed encoder falls furthest at small N.** The learned encoder's advantage over a sign threshold (c3 vs. c4) is clearest when only 72–144 trials are available. By N≥576 all three models converge near chance, suggesting the absolute accuracy limit of this architecture on this signal is around 55–60%.
+
+| Model | N=72 (control) | N=288 (control) | N=1152 (control) |
+|-------|---------------|-----------------|-----------------|
+| Full NiSNN-A | 68.2% ± 6.4% | 57.6% ± 3.2% | 54.2% ± 2.5% |
+| EncoderOnly | 73.8% ± 9.8% | 61.1% ± 1.3% | 57.0% ± 4.4% |
+| FixedEncoder | 67.0% ± 11.1% | 57.3% ± 4.2% | 55.7% ± 4.7% |
+
+**Practical implication.** For experiments that test the c3 hypothesis, N=144–288 is the sweet spot: variance is manageable, the encoder-only vs. full gap is cleanly visible, and training time is reasonable. Scaling beyond N=576 does not sharpen the conclusion; it only confirms the plateau.
+
+---
+
 ## Data and code
 
 - **Generator:** [`src/generate.py`](src/generate.py)
 - **Figure generator:** [`src/make_figures.py`](src/make_figures.py)
+- **Sweep runner:** [`src/sweep.py`](src/sweep.py) — generates datasets at multiple N, trains all variants, writes `sweep_results.json`
+- **Sweep plot:** [`src/plot_sweep.py`](src/plot_sweep.py) — reads `sweep_results.json`, writes `figures/fig_sweep.png`
 - **Control dataset:** [`data/control/`](data/control/): `control_trials.npy` (288×20×20×20, float32), `control_labels.npy`, `control_config.json`
 - **Stress dataset:** [`data/stress/`](data/stress/): same structure, weak modulation
 
 Reproduce from scratch:
 ```bash
-python3 -m venv .venv && .venv/bin/pip install numpy scipy matplotlib
+python3 -m venv .venv && .venv/bin/pip install numpy scipy matplotlib torch scikit-learn
 .venv/bin/python src/generate.py --variant control
 .venv/bin/python src/generate.py --variant stress
 .venv/bin/python src/make_figures.py
+
+# Ablation experiments at N=288
+.venv/bin/python src/train.py
+
+# Dataset-size sweep (N = 72, 144, 288, 576, 1152)
+.venv/bin/python src/sweep.py
+.venv/bin/python src/plot_sweep.py
 ```
 
 The code that supports data generation and experiments is available [here](https://github.com/pepijn-lens/eeg-spiking-nets).
